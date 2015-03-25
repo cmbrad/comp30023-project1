@@ -4,14 +4,15 @@
 #include <string.h>
 #include <unistd.h>
 
-
+#define USAGE "./memswap -a [algorithm name] -f [filename] -m [memsize]"
 
 int main(int argc, char **argv)
 {
 	int c, memsize;
 	char *filename, *algorithm_name;
-	
-	while ((c=getopt(argc, argv, "afm:")) != -1)
+
+	filename = algorithm_name = NULL;	
+	while ((c=getopt(argc, argv, "a:f:m:")) != -1)
 	{
 		switch (c)
 		{
