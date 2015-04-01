@@ -14,6 +14,7 @@ list_t *load_processes_from(char *filename, list_t *list)
 		process->pid = pid;
 		process->size = size;
 		process->last_loaded = 0;
+		process->swap_count = 0;
 
 		list = push(list,process);
 	}

@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 	do
 	{
 		//load_process(cur->process);
-
+		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", cur->process->pid,0,0,0);
 	} while ((cur = cur->next));
 
 	// If a process needs to be loaded, but there is no hole large enough
