@@ -38,20 +38,25 @@ int main(int argc, char **argv)
 	printf("filename: %s algorithm_name: %s memsize: %d\n", filename, algorithm_name, memsize);
 
 	// Parse the process file to obtain the initial queue of processes waiting to be swapped into memory.
-	list_t *process_list = list_new(sizeof(process_t));
-	process_list = load_processes_from(filename, process_list);
+	list_t *process_list = load_processes_from(filename);
 
+	//
+	
+	
 	// Assume memory is initially empty.
 	//memory_t memory = new_memory(memsize);
 	//list_t *free_list = new_list(sizeof());
 	
 	// Function pointers we use to load into memory - they correspond to what algorithm we chose earlier.
+	//void (*load_process)(process_t);
+
+	// void load_process(list_t *free_list, process_t *process, void (*fit_function)(list_t *free_list, process_t *process));
 
 	// Load the processes from the queue into memory, one by one, according to one of the four algorithms.
 	node_t *cur = process_list->head;
 	do
 	{
-		//load_process(cur->process);
+		//(*load_process)(cur->process);
 		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", ((process_t *)cur->data)->pid,0,0,0);
 	} while ((cur = cur->next));
 

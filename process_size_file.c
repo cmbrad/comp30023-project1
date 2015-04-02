@@ -4,10 +4,14 @@
 #include "process.h"
 #include "process_size_file.h"
 
-list_t *load_processes_from(char *filename, list_t *list)
+list_t *load_processes_from(char *filename)
 {
 	FILE *file;
 	int pid, size;
+	list_t *list;
+
+	list = list_new(sizeof(process_t));
+
 	file = fopen(filename, "r");
 	assert(file != NULL);
 	while (fscanf(file, "%d %d", &pid, &size) != EOF) {
