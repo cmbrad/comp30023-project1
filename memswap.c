@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 			process_t *to_swap = swap_process(memory, free_list);
 			assert(to_swap != NULL);
 			addr = get_addr(free_list, new_mem->process);
-			if (to_swap->swap_count <= SWAP_LIMIT) {
+			if (to_swap->swap_count < SWAP_LIMIT) {
 				///printf("Queued process %d.\n", to_swap->pid);
 				list_push(process_list, to_swap);
 			} //else
