@@ -19,6 +19,8 @@ void add_free(list_t *free_list, memory_t *rem);
 int cmp(void *cmp1, void *cmp2);
 void print_free(list_t *free_list);
 void rem_free(list_t *free_list, memory_t *rem);
+void print_mem(list_t *memory);
+void print_que(list_t *queue);
 
 int main(int argc, char **argv)
 {
@@ -112,6 +114,8 @@ int main(int argc, char **argv)
 		
 		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,0);
 		print_free(free_list);
+		print_mem(memory);
+		print_que(process_list);
 	} while ((cur = cur->next));
 
 	// If a process needs to be loaded, but there is no hole large enough
@@ -154,6 +158,7 @@ process_t *swap_process(list_t *memory, list_t *free_list)
 	memory_t *cur_mem = NULL;
 	node_t *cur_node = memory->head;
 
+	assert(cur_node != NULL);
 	do {
 		cur_mem = ((memory_t *)cur_node->data);
 		cur_proc = cur_mem->process;
@@ -237,6 +242,7 @@ void add_free(list_t *free_list, memory_t *rem)
 void rem_free(list_t *free_list, memory_t *rem)
 {
 	memory_t *cur_mem = NULL;
+	node_t *pre_node = NULL;
 	node_t *cur_node = free_list->head;
 
 	assert(cur_node != NULL);
@@ -252,10 +258,17 @@ void rem_free(list_t *free_list, memory_t *rem)
 			if (cur_mem->size == 0)
 			{
 				// remove
+				if (pre_node == NULL)
+					free_list->head = cur_node->next;
+				else
+					pre_node->next = cur_node->next;
+				//free(cur_node);
+				free_list->node_count--;
 			}
 			printf("Shrinking free space...\n");
 			break;
 		}
+		pre_node = cur_node;
 	} while ((cur_node = cur_node->next));
 }
 
@@ -268,6 +281,34 @@ void print_free(list_t *free_list)
 	do {
 		cur_mem = (memory_t *)cur_node->data;
 		printf(" (%d, %d)", cur_mem->addr, cur_mem->size);
+	} while ((cur_node = cur_node->next));
+	printf(".\n");
+}
+
+void print_mem(list_t *memory)
+{
+	memory_t *cur_mem = NULL;
+	node_t *cur_node = memory->head;
+
+	assert(cur_node != NULL);
+	printf("Real memory: ");
+	do {
+		cur_mem = (memory_t *)cur_node->data;
+		printf(" (addr=%d, size=%d, pid=%d)", cur_mem->addr, cur_mem->size, cur_mem->process->pid);
+	} while ((cur_node = cur_node->next));
+	printf(".\n");
+}
+
+void print_que(list_t *queue)
+{
+	process_t *cur_proc = NULL;
+	node_t *cur_node = queue->head;
+
+	assert(cur_node != NULL);
+	printf("Process Queue: ");
+	do {
+		cur_proc = (process_t *)cur_node->data;
+		printf(" (pid=%d, size=%d, last_loaded=%d, swap_count=%d)", cur_proc->pid, cur_proc->size, cur_proc->last_loaded, cur_proc->swap_count);
 	} while ((cur_node = cur_node->next));
 	printf(".\n");
 }
