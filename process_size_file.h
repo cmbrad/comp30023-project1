@@ -1,3 +1,3 @@
-#include "process_list.h"
+#include "list.h"
 
 list_t *load_processes_from(char *filename, list_t *list);

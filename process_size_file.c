@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "process.h"
 #include "process_size_file.h"
 
 list_t *load_processes_from(char *filename, list_t *list)
@@ -16,7 +17,7 @@ list_t *load_processes_from(char *filename, list_t *list)
 		process->last_loaded = 0;
 		process->swap_count = 0;
 
-		list = push(list,process);
+		list_push(list,process);
 	}
 
 	return list;

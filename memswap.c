@@ -3,7 +3,8 @@
 #include <assert.h>
 #include <string.h>
 #include <unistd.h>
-#include "process_list.h"
+#include "list.h"
+#include "process.h"
 #include "process_size_file.h"
 
 #define USAGE "./memswap -a [algorithm name] -f [filename] -m [memsize]"
@@ -37,12 +38,13 @@ int main(int argc, char **argv)
 	printf("filename: %s algorithm_name: %s memsize: %d\n", filename, algorithm_name, memsize);
 
 	// Parse the process file to obtain the initial queue of processes waiting to be swapped into memory.
-	list_t *process_list = new_list();
+	list_t *process_list = list_new(sizeof(process_t));
 	process_list = load_processes_from(filename, process_list);
 
 	// Assume memory is initially empty.
 	//memory_t memory = new_memory(memsize);
-
+	//list_t *free_list = new_list(sizeof());
+	
 	// Function pointers we use to load into memory - they correspond to what algorithm we chose earlier.
 
 	// Load the processes from the queue into memory, one by one, according to one of the four algorithms.
@@ -50,7 +52,7 @@ int main(int argc, char **argv)
 	do
 	{
 		//load_process(cur->process);
-		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", cur->process->pid,0,0,0);
+		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", ((process_t *)cur->data)->pid,0,0,0);
 	} while ((cur = cur->next));
 
 	// If a process needs to be loaded, but there is no hole large enough
