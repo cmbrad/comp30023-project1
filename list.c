@@ -62,7 +62,7 @@ void list_push_o(list_t *list, void *data, int (*cmp)(void *a,void *b))
 				list->head = node;
 			node->next = cur;
 
-			printf("insert before. \n");
+			///printf("insert before. \n");
 			break;
 		}
 		else if (res == 0)
@@ -73,7 +73,7 @@ void list_push_o(list_t *list, void *data, int (*cmp)(void *a,void *b))
 		{
 			node->next = cur->next;
 			cur->next = node;
-			printf("insert after.\n");
+			///printf("insert after.\n");
 			break;
 		}
 		pre = cur;

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 #include "list.h"
 #include "process.h"
 #include "process_size_file.h"
@@ -21,6 +22,7 @@ void print_free(list_t *free_list);
 void rem_free(list_t *free_list, memory_t *rem);
 void print_mem(list_t *memory);
 void print_que(list_t *queue);
+int get_mem_usage(list_t *memory);
 
 int main(int argc, char **argv)
 {
@@ -87,10 +89,10 @@ int main(int argc, char **argv)
 			assert(to_swap != NULL);
 			addr = get_addr(free_list, new_mem->process);
 			if (to_swap->swap_count <= SWAP_LIMIT) {
-				printf("Queued process %d.\n", to_swap->pid);
+				///printf("Queued process %d.\n", to_swap->pid);
 				list_push(process_list, to_swap);
-			} else
-				printf("Process %d finished. (%d)\n", to_swap->pid, to_swap->swap_count);
+			} //else
+				///printf("Process %d finished. (%d)\n", to_swap->pid, to_swap->swap_count);
 		}
 		new_mem->addr = addr;
 		new_mem->process->last_loaded = time;
@@ -114,10 +116,10 @@ int main(int argc, char **argv)
 		
 	//	//list_push_o(free_list, new_free, cmp);
 		
-		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,0);
-		print_free(free_list);
-		print_mem(memory);
-		print_que(process_list);
+		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*((float)get_mem_usage(memory)/memsize))));
+		///print_free(free_list);
+		///print_mem(memory);
+		///print_que(process_list);
 
 		time += 1;
 	} while ((cur = cur->next));
@@ -163,8 +165,8 @@ process_t *swap_process(list_t *memory, list_t *free_list)
 	memory_t *cur_mem = NULL;
 	node_t *cur_node = memory->head;
 
-	print_mem(memory);
-	print_free(free_list);
+	///print_mem(memory);
+	///print_free(free_list);
 	assert(cur_node != NULL);
 	do {
 		cur_mem = ((memory_t *)cur_node->data);
@@ -211,7 +213,7 @@ void add_free(list_t *free_list, memory_t *rem)
 			cur_mem->addr = rem->addr;
 			cur_mem->size += rem->size;
 			soln_found = 1;
-			printf("extend into prev block.\n");
+			///printf("extend into prev block.\n");
 
 			break;
 		}
@@ -221,11 +223,11 @@ void add_free(list_t *free_list, memory_t *rem)
 			// Add it to that free block.
 			cur_mem->size += rem->size;
 			soln_found = 1;
-			printf("extend into next block\n");
+			///printf("extend into next block\n");
 
 			if(cur_node->next != NULL && cur_mem->addr + cur_mem->size == ((memory_t *)cur_node->next->data)->addr)
 			{
-				printf("woo hoo consolidate\n");
+				///printf("woo hoo consolidate\n");
 				cur_mem->size += ((memory_t *)cur_node->next->data)->size;
 				rem_free(free_list, (memory_t *)cur_node->next->data);
 			}
@@ -243,9 +245,9 @@ void add_free(list_t *free_list, memory_t *rem)
 		new_free->size = rem->size;
 
 		list_push_o(free_list, new_free, cmp);
-		printf("make a new hole.\n");
+		///printf("make a new hole.\n");
 	}
-	print_free(free_list);
+	///print_free(free_list);
 }
 
 void rem_free(list_t *free_list, memory_t *rem)
@@ -266,8 +268,8 @@ void rem_free(list_t *free_list, memory_t *rem)
 
 			if (cur_mem->size == 0)
 			{
-				print_free(free_list);
-				printf("removing empty free...");
+				//print_free(free_list);
+				///printf("removing empty free...");
 				// remove
 				if (pre_node == NULL)
 					free_list->head = cur_node->next;
@@ -276,12 +278,12 @@ void rem_free(list_t *free_list, memory_t *rem)
 				//free(cur_node);
 				free_list->node_count--;
 			}
-			printf("Shrinking free space...\n");
+			///printf("Shrinking free space...\n");
 			break;
 		}
 		pre_node = cur_node;
 	} while ((cur_node = cur_node->next));
-	print_free(free_list);
+	///print_free(free_list);
 }
 
 void print_free(list_t *free_list)
@@ -296,6 +298,20 @@ void print_free(list_t *free_list)
 		printf(" (%d, %d)", cur_mem->addr, cur_mem->size);
 	} while ((cur_node = cur_node->next));
 	printf(".\n");
+}
+
+int get_mem_usage(list_t *memory)
+{
+	int usage = 0;
+	memory_t *cur_mem = NULL;
+	node_t *cur_node = memory->head;
+
+	assert(cur_node != NULL);
+	do {
+		cur_mem = (memory_t *)cur_node->data;
+		usage += cur_mem->size;
+	} while ((cur_node = cur_node->next));
+	return usage;
 }
 
 void print_mem(list_t *memory)
@@ -347,7 +363,7 @@ void remove_process(list_t *list, process_t *process)
 	node_t *cur_node = list->head;
 	
 	assert(cur_node != NULL);
-	printf("Kicking pid=%d\n", process->pid);
+	///printf("Kicking pid=%d\n", process->pid);
 	do {
 		cur_proc = ((memory_t *)cur_node->data)->process;
 		if(cur_proc->pid == process->pid)
