@@ -18,6 +18,7 @@ list_t *list_new(size_t data_size);
 void list_destroy(list_t *list);
 
 void list_push(list_t *list, void *data);
+void list_push_o(list_t *list, void *data, int (*cmp)(void *a,void *b));
 void *list_pop(list_t *list);
 
 int list_is_empty(list_t *list);

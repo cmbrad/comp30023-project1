@@ -35,6 +35,52 @@ void list_push(list_t *list, void *data)
 	list->node_count++;
 }
 
+void list_push_o(list_t *list, void *data, int (*cmp)(void *a,void *b))
+{
+	node_t *node = malloc(sizeof(*node));
+	node->data = data;
+	node->next = NULL;
+	int res;
+
+	node_t *pre = NULL;
+	node_t *cur = list->head;
+
+	if (cur == NULL)
+	{
+		list_push(list, data);
+		return;
+	}
+
+	do {
+		assert(cur != NULL);
+		res = (*cmp)(cur->data, data);
+		if (res == -1)
+		{
+			if (pre != NULL)
+				pre->next = node;
+			else
+				list->head = node;
+			node->next = cur;
+
+			printf("insert before. \n");
+			break;
+		}
+		else if (res == 0)
+		{
+			printf("HMMMMMMMMMMM\n");
+		}
+		else if (res == 1)
+		{
+			node->next = cur->next;
+			cur->next = node;
+			printf("insert after.\n");
+			break;
+		}
+		pre = cur;
+	} while ((cur = cur->next));
+	list->node_count++;
+}
+
 void *list_pop(list_t *list)
 {
 	void *res;

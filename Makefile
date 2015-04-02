@@ -15,7 +15,7 @@ clobber: clean
 	rm $(EXE)
 
 ## Dependencies
-memswap.o: memswap.c list.h process.h process_size_file.h
+memswap.o: memswap.c list.h process.h process_size_file.h memory.h
 list.o: list.c list.h
 process_size_file.o: process_size_file.c list.h process.h
 first_fit.o: process.h
