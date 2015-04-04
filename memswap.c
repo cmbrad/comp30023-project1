@@ -155,6 +155,11 @@ int main(int argc, char **argv)
 
 	// The simulation should terminate once no more processes are waiting to be swapped into memory
 
+	// Clean up
+	list_destroy(memory);
+	list_destroy(free_list);
+	list_destroy(process_list);
+
 	return 0;
 }
 

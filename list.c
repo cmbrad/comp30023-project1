@@ -16,7 +16,17 @@ list_t *list_new(size_t data_size)
 
 void list_destroy(list_t *list)
 {
-	
+	node_t *cur = list->head;
+
+	while (list->head != NULL) {
+		cur = list->head;
+		list->head = cur->next;
+
+		free(cur->data);
+		free(cur);
+	}
+
+	free(list);
 }
 
 void list_push(list_t *list, void *data)
@@ -45,6 +55,7 @@ void list_push_o(list_t *list, void *data, int (*cmp)(void *a,void *b))
 	node_t *pre = NULL;
 	node_t *cur = list->head;
 
+	// If the list is empty then just insert at the top.
 	if (cur == NULL)
 	{
 		list_push(list, data);
@@ -62,18 +73,12 @@ void list_push_o(list_t *list, void *data, int (*cmp)(void *a,void *b))
 				list->head = node;
 			node->next = cur;
 
-			///printf("insert before. \n");
 			break;
 		}
-		else if (res == 0)
-		{
-			printf("HMMMMMMMMMMM\n");
-		}
-		else if (res == 1)
+		else if (res == 0 || res == 1)
 		{
 			node->next = cur->next;
 			cur->next = node;
-			///printf("insert after.\n");
 			break;
 		}
 		pre = cur;
@@ -89,7 +94,7 @@ void *list_pop(list_t *list)
 
 	node_t *next = list->head->next;
 	res = list->head->data;
-        //free(list->head);
+        free(list->head);
         list->head = next;
 	list->node_count--;
 	
