@@ -33,6 +33,7 @@ int main(int argc, char **argv)
 	int c, memsize;
 	char *filename, *algorithm_name;
 
+	memsize = -1;
 	filename = algorithm_name = NULL;	
 	while ((c=getopt(argc, argv, "a:f:m:")) != -1)
 	{
@@ -53,7 +54,21 @@ int main(int argc, char **argv)
 		}
 	}
 
-	
+	int all_given = 1;
+	if (filename == NULL) {
+		printf("ERROR: No filename specified.\n");
+		all_given = 0;
+	} if (algorithm_name == NULL) {
+		printf("ERROR: No algorithm specified.\n");
+		all_given = 0;
+	} if (memsize <= 0) {
+		printf("ERROR: Memory size must be greater than 0.\n");
+		all_given = 0;
+	}
+
+	if (!all_given) {
+		return 1;
+	}
 	//printf("filename: %s algorithm_name: %s memsize: %d\n", filename, algorithm_name, memsize);
 
 	// Parse the process file to obtain the initial queue of processes waiting to be swapped into memory.
