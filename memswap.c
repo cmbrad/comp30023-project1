@@ -158,7 +158,13 @@ int first_get_addr(list_t *free_list, process_t *process)
 	int addr = -1;
 
 	node_t *cur = free_list->head;
-	assert(cur != NULL);
+	
+	// If free list is NULL that means memory is full,
+	// in that case we cannot allocate an address so
+	// return -1.
+	if (cur == NULL)
+		return -1;
+
 	do {
 		memory_t *cur_mem = (memory_t *)cur->data;
 		if (cur_mem->size >= process->size)
@@ -172,7 +178,11 @@ int best_get_addr(list_t *free_list, process_t *process)
 {
 	memory_t *chosen = NULL;
 	node_t *cur = free_list->head;
-	assert(cur != NULL);
+	// If free list is NULL that means memory is full,
+	// in that case we cannot allocate an address so
+	// return -1.
+	if (cur == NULL)
+		return -1;
 	do {
 		memory_t *cur_mem = (memory_t *)cur->data;
 		if (cur_mem->size >= process->size && ((chosen != NULL && chosen->size >= cur_mem->size) || chosen == NULL))
@@ -185,9 +195,12 @@ int best_get_addr(list_t *free_list, process_t *process)
 int worst_get_addr(list_t *free_list, process_t *process)
 {
 	memory_t *chosen = NULL;
-
 	node_t *cur = free_list->head;
-	assert(cur != NULL);
+	// If free list is NULL that means memory is full,
+	// in that case we cannot allocate an address so
+	// return -1.
+	if (cur == NULL)
+		return -1;
 	do {
 		memory_t *cur_mem = (memory_t *)cur->data;
 		if (cur_mem->size >= process->size && ((chosen != NULL && chosen->size <= cur_mem->size) || (chosen == NULL)))
@@ -229,8 +242,11 @@ void add_free(list_t *free_list, memory_t *rem)
 	node_t *cur_node = free_list->head;
 	int soln_found = 0;
 
-	assert(cur_node != NULL);
 	do {
+		// cur_node may be NULL if memory is full.
+		if (cur_node == NULL)
+			break;
+
 		cur_mem = (memory_t *)cur_node->data;
 		if(cur_mem->addr == rem->addr + rem->size)
 		{
