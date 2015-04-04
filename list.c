@@ -96,6 +96,38 @@ void *list_pop(list_t *list)
 	return res;
 }
 
+void list_for_each(list_t *list, void (*list_with)(void *))
+{
+	node_t *cur = list->head;
+	assert(cur != NULL);
+	do {
+		list_with(cur->data);
+	} while((cur = cur->next));
+}
+
+void list_remove(list_t *list, void *data, int (*match)(void *, void*))
+{
+	node_t *pre = NULL;
+	node_t *cur = list->head;
+	assert(cur != NULL);
+	do {
+		if (match(data,cur->data))
+		{
+			if (pre != NULL)
+				pre->next = cur->next;
+			else
+				list->head = cur->next;
+
+			if (cur->next == NULL)
+				list->foot = pre;
+
+			list->node_count--;
+			return;
+		}
+		pre = cur;
+	} while((cur = cur->next));	
+}
+
 int list_is_empty(list_t *list)
 {
 	return list->node_count == 0;

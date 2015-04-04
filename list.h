@@ -21,6 +21,9 @@ void list_push(list_t *list, void *data);
 void list_push_o(list_t *list, void *data, int (*cmp)(void *a,void *b));
 void *list_pop(list_t *list);
 
+void list_for_each(list_t *list, void (*list_with)(void *));
+void list_remove(list_t *list, void *data, int (*match)(void *, void*));
+
 int list_is_empty(list_t *list);
 unsigned int list_count(list_t *list);
 #endif
