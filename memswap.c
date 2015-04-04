@@ -14,9 +14,8 @@
 
 #define SWAP_LIMIT 3
 
-int first_get_addr(list_t *list, process_t *process);
-int best_get_addr(list_t *list, process_t *process);
-int worst_get_addr(list_t *list, process_t *process);
+typedef memory_t *(*addr_func)(memory_t *, memory_t *, process_t *);
+
 process_t *swap_process(list_t *memory, list_t *free_list);
 void add_free(list_t *free_list, memory_t *rem);
 int cmp(void *cmp1, void *cmp2);
@@ -27,6 +26,12 @@ void print_que(list_t *queue);
 int get_mem_usage(list_t *memory);
 int match_process(void *d1, void *d2);
 //int get_addr(list_t *memory, list_t *free_list, list_t *process_list, process_t *process, int (*addr_func)(list_t *list, process_t *process));
+
+int get_addr(list_t *, process_t *, addr_func);
+memory_t *best_get_addr(memory_t *best, memory_t *cand, process_t *process);
+memory_t *first_get_addr(memory_t *best, memory_t *cand, process_t *process);
+memory_t *worst_get_addr(memory_t *best, memory_t *cand, process_t *process);
+memory_t *next_get_addr(memory_t *best, memory_t *cand, process_t *process);
 
 int main(int argc, char **argv)
 {
@@ -90,13 +95,13 @@ int main(int argc, char **argv)
 	// Function pointers we use to load into memory - they correspond to what algorithm we chose earlier.
 	//void (*load_process)(process_t);
 
-	int (*get_addr)(list_t *list, process_t *process) = NULL;
+	addr_func alg_get_addr  = NULL;
 	if (strcmp(algorithm_name, "first") == 0)
-		get_addr = &first_get_addr;
+		alg_get_addr = &first_get_addr;
 	else if (strcmp(algorithm_name, "best") == 0)
-		get_addr = &best_get_addr;
+		alg_get_addr = &best_get_addr;
 	else if (strcmp(algorithm_name, "worst") == 0)
-		get_addr = &worst_get_addr;
+		alg_get_addr = &worst_get_addr;
 	//else if (strcmp(algorithm_name, "next") == 0)
 	//	get_addr = &next_get_addr;
 	else
@@ -116,7 +121,7 @@ int main(int argc, char **argv)
 		
 		// Swap out processes until we have enough space to allocate to
 		// the current process
-		while ((new_mem->addr = get_addr(free_list, new_mem->process)) == -1)
+		while ((new_mem->addr = get_addr(free_list, new_mem->process, alg_get_addr)) == -1)
 		{
 			// Swap out a process to make room to allocate memory
 			process_t *to_swap = swap_process(memory, free_list);
@@ -153,61 +158,42 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-int first_get_addr(list_t *free_list, process_t *process)
+int get_addr(list_t *free_list, process_t *process, addr_func get_new_addr)
 {
-	int addr = -1;
-
+	memory_t *chosen = NULL;
 	node_t *cur = free_list->head;
-	
-	// If free list is NULL that means memory is full,
-	// in that case we cannot allocate an address so
-	// return -1.
-	if (cur == NULL)
+
+	if (list_is_empty(free_list))
 		return -1;
 
 	do {
 		memory_t *cur_mem = (memory_t *)cur->data;
 		if (cur_mem->size >= process->size)
-			return cur_mem->addr;
-	} while ((cur = cur->next));
-
-	return addr;
-}
-
-int best_get_addr(list_t *free_list, process_t *process)
-{
-	memory_t *chosen = NULL;
-	node_t *cur = free_list->head;
-	// If free list is NULL that means memory is full,
-	// in that case we cannot allocate an address so
-	// return -1.
-	if (cur == NULL)
-		return -1;
-	do {
-		memory_t *cur_mem = (memory_t *)cur->data;
-		if (cur_mem->size >= process->size && ((chosen != NULL && chosen->size >= cur_mem->size) || chosen == NULL))
-			chosen = cur_mem;
+			chosen = get_new_addr(chosen, cur_mem, process);
 	} while ((cur = cur->next));
 
 	return chosen != NULL ? chosen->addr : -1;
 }
 
-int worst_get_addr(list_t *free_list, process_t *process)
+memory_t *first_get_addr(memory_t *best, memory_t *cand, process_t *process)
 {
-	memory_t *chosen = NULL;
-	node_t *cur = free_list->head;
-	// If free list is NULL that means memory is full,
-	// in that case we cannot allocate an address so
-	// return -1.
-	if (cur == NULL)
-		return -1;
-	do {
-		memory_t *cur_mem = (memory_t *)cur->data;
-		if (cur_mem->size >= process->size && ((chosen != NULL && chosen->size <= cur_mem->size) || (chosen == NULL)))
-			chosen = cur_mem;
-	} while ((cur = cur->next));
+	if(best == NULL)
+		return cand;
+	return best;
+}
 
-	return chosen != NULL ? chosen->addr : -1;
+memory_t *best_get_addr(memory_t *best, memory_t *cand, process_t *process)
+{
+	if(best == NULL || best->size >= cand->size)
+		return cand;
+	return best;
+}
+
+memory_t *worst_get_addr(memory_t *best, memory_t *cand, process_t *process)
+{
+	if(best == NULL || best->size <= cand->size)
+		return cand;
+	return best;
 }
 
 process_t *swap_process(list_t *memory, list_t *free_list)
