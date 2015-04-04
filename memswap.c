@@ -18,14 +18,13 @@ typedef memory_t *(*addr_func)(memory_t *, memory_t *, process_t *);
 
 process_t *swap_process(list_t *memory, list_t *free_list);
 void add_free(list_t *free_list, memory_t *rem);
-int cmp(void *cmp1, void *cmp2);
+int process_cmp(void *cmp1, void *cmp2);
 void print_free(list_t *free_list);
-void rem_free(list_t *free_list, memory_t *rem);
 void print_mem(list_t *memory);
 void print_que(list_t *queue);
 int get_mem_usage(list_t *memory);
-int match_process(void *d1, void *d2);
-//int get_addr(list_t *memory, list_t *free_list, list_t *process_list, process_t *process, int (*addr_func)(list_t *list, process_t *process));
+int remove_free(list_t *list, void *a, void *b);
+int add_free_part(list_t *list, void *a, void *b);
 
 int get_addr(list_t *, process_t *, addr_func);
 memory_t *best_get_addr(memory_t *best, memory_t *cand, process_t *process);
@@ -114,6 +113,8 @@ int main(int argc, char **argv)
 	node_t *cur = process_list->head;
 	do
 	{
+		// Allocate a new block of memory to add to the current
+		// active memory.
 		memory_t *new_mem = malloc(sizeof(memory_t));
 		new_mem->process = (process_t *)cur->data;
 		new_mem->process->last_loaded = time;
@@ -126,24 +127,24 @@ int main(int argc, char **argv)
 			// Swap out a process to make room to allocate memory
 			process_t *to_swap = swap_process(memory, free_list);
 			// Processes will not be requeued for execution if they've
-			// ben swapped SWAP_LIMIT times. Otherwise,
-			// add to the back of the queue.
+			// been swapped SWAP_LIMIT times.
 			if (to_swap->swap_count < SWAP_LIMIT)
 				list_push(process_list, to_swap);
 		}
 		list_push(memory, new_mem);
-		rem_free(free_list, new_mem);
-		
+		list_modify(free_list, new_mem, remove_free);
+	
+		// Print information string...
 		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*((float)get_mem_usage(memory)/memsize))));
-		///print_free(free_list);
-		///print_mem(memory);
-		///print_que(process_list);
+		
+		//print_free(free_list);
+		//print_mem(memory);
+		//print_que(process_list);
 
 		// Time advances at a constant rate! In this universe anyway..
 		time += 1;
 	} while ((cur = cur->next));
 
-	// If a process needs to be swapped out, choose the one which has the largest size. If two processes
 	// have equal largest size, choose the one which has been in memory the longest (measured from the
 	// time it was most recently placed in memory).
 
@@ -218,7 +219,7 @@ process_t *swap_process(list_t *memory, list_t *free_list)
 			to_swap = cur_mem;
 	} while ((cur_node = cur_node->next));
 
-	list_remove(memory, to_swap, &match_process);
+	list_remove(memory, to_swap);
 	add_free(free_list, to_swap);
 	
 	to_swap->process->swap_count++;
@@ -229,87 +230,18 @@ process_t *swap_process(list_t *memory, list_t *free_list)
 
 void add_free(list_t *free_list, memory_t *rem)
 {
-	memory_t *cur_mem = NULL;
-	node_t *cur_node = free_list->head;
-	int soln_found = 0;
-
-	do {
-		// cur_node may be NULL if memory is full.
-		if (cur_node == NULL)
-			break;
-
-		cur_mem = (memory_t *)cur_node->data;
-		if(cur_mem->addr == rem->addr + rem->size)
-		{
-			// Block which was freed is directly before a free block.
-			// Extend the current block into the previous block.
-			cur_mem->addr = rem->addr;
-			cur_mem->size += rem->size;
-			soln_found = 1;
-			break;
-		}
-		else if (cur_mem->addr + cur_mem->size == rem->addr)
-		{
-			// Block which was freed occurs directly after a free block.
-			// Extend the current free block into the next
-			cur_mem->size += rem->size;
-			soln_found = 1;
-
-			if(cur_node->next != NULL && cur_mem->addr + cur_mem->size == ((memory_t *)cur_node->next->data)->addr)
-			{
-				///printf("woo hoo consolidate\n");
-				cur_mem->size += ((memory_t *)cur_node->next->data)->size;
-				rem_free(free_list, (memory_t *)cur_node->next->data);
-			}
-			break;
-		}
-	} while ((cur_node = cur_node->next));
-
-	if (!soln_found)
+	// Try to combine newly freed memory with a current free block
+	if (list_is_empty(free_list) || !list_modify(free_list, rem, add_free_part))
 	{
-		// Block is not adjacent to any curent free blocks.
-		// Make a new free block.
+		// Free memory is not contiguous and cannot be combined,
+		// or there is no free memory. Create a new free block.
 		memory_t *new_free = malloc(sizeof(memory_t));
 		new_free->process = NULL;
 		new_free->addr = rem->addr;
 		new_free->size = rem->size;
 
-		list_push_o(free_list, new_free, cmp);
+		list_push_o(free_list, new_free, process_cmp);
 	}
-}
-
-void rem_free(list_t *free_list, memory_t *rem)
-{
-	memory_t *cur_mem = NULL;
-	node_t *pre_node = NULL;
-	node_t *cur_node = free_list->head;
-
-	assert(cur_node != NULL);
-	do {
-		cur_mem = (memory_t *)cur_node->data;
-		if(cur_mem->addr == rem->addr)
-		{
-			// Block which was freed is directly before a free block.
-			// Add it to that free block.
-			cur_mem->addr += rem->size;
-			cur_mem->size -= rem->size;
-
-			if (cur_mem->size == 0)
-			{
-				// remove
-				if (pre_node == NULL)
-					free_list->head = cur_node->next;
-				else
-					pre_node->next = cur_node->next;
-				//free(cur_node);
-				free_list->node_count--;
-			}
-			///printf("Shrinking free space...\n");
-			break;
-		}
-		pre_node = cur_node;
-	} while ((cur_node = cur_node->next));
-	///print_free(free_list);
 }
 
 int get_mem_usage(list_t *memory)
@@ -324,6 +256,75 @@ int get_mem_usage(list_t *memory)
 		usage += cur_mem->size;
 	} while ((cur_node = cur_node->next));
 	return usage;
+}
+
+
+// If a process needs to be swapped out, choose the one which has
+// the largest size. If two processes are of equal size then
+// choose the one which has been in memory longest.
+int process_cmp(void *cmp1, void *cmp2)
+{
+	memory_t *m1 = (memory_t *)cmp1;
+	memory_t *m2 = (memory_t *)cmp2;
+
+	if (m1->addr + m1->size > m2->addr)
+		return -1;
+	else if (m1->addr + m1->size == m2->addr)
+		return 0;
+	else
+		return 1;
+}
+
+int remove_free(list_t *list, void *a, void *b)
+{
+	memory_t *m1 = (memory_t *)a;
+	memory_t *m2 = (memory_t *)b;
+
+	if (m1->addr == m2->addr)
+	{
+		m1->addr += m2->size;
+		m1->size -= m2->size;
+
+		// If a portion of free memory is reduced to
+		// size zero then remove it.
+		if (m1->size == 0)
+			list_remove(list, m2);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+int add_free_part(list_t *list, void *a, void *b)
+{
+	memory_t *m1 = (memory_t *)a;
+	memory_t *m2 = (memory_t *)b;
+	memory_t *next = NULL;
+
+	if (m1->addr == m2->addr + m2->size)
+	{
+		// Block which was freed is directly before a free block.
+		// Extend the current block into the previous block.
+		m1->addr = m2->addr;
+		m1->size += m2->size;
+	}
+	else if (m1->addr + m1->size == m2->addr)
+	{
+		// Block which was freed occurs directly after a free block.
+		// Extend the current free block into the next
+		m1->size += m2->size;
+		
+		if ((next = list_get_next(list, m1)) != NULL)
+		{
+			m1->size += next->size;
+			list_modify(list, next, remove_free);
+		}
+	}
+	else
+		return 0;
+
+	return 1;
 }
 
 void print_free(list_t *free_list)
@@ -366,25 +367,4 @@ void print_que(list_t *queue)
 		printf(" (pid=%d, size=%d, last_loaded=%d, swap_count=%d)", cur_proc->pid, cur_proc->size, cur_proc->last_loaded, cur_proc->swap_count);
 	} while ((cur_node = cur_node->next));
 	printf(".\n");
-}
-
-int cmp(void *cmp1, void *cmp2)
-{
-	memory_t *m1 = (memory_t *)cmp1;
-	memory_t *m2 = (memory_t *)cmp2;
-
-	if (m1->addr + m1->size > m2->addr)
-		return -1;
-	else if (m1->addr + m1->size == m2->addr)
-		return 0;
-	else
-		return 1;
-}
-
-int match_process(void *d1, void *d2)
-{
-	process_t *p1 = ((memory_t *)d1)->process;
-	process_t *p2 = ((memory_t *)d2)->process;
-
-	return p1->pid == p2->pid;
 }

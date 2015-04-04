@@ -45,7 +45,7 @@ void list_push(list_t *list, void *data)
 	list->node_count++;
 }
 
-void list_push_o(list_t *list, void *data, int (*cmp)(void *a,void *b))
+void list_push_o(list_t *list, void *data, cmp_func cmp)
 {
 	node_t *node = malloc(sizeof(*node));
 	node->data = data;
@@ -110,13 +110,25 @@ void list_for_each(list_t *list, void (*list_with)(void *))
 	} while((cur = cur->next));
 }
 
-void list_remove(list_t *list, void *data, int (*match)(void *, void*))
+int list_modify(list_t *list, void *data, modify_func modify)
+{
+	int success = 0;
+	node_t *cur = list->head;
+	assert(cur != NULL);
+	do {
+		if(modify(list, cur->data, data))
+			success = 1;
+	} while((cur = cur->next));
+	return success;
+}
+
+void list_remove(list_t *list, void *data)
 {
 	node_t *pre = NULL;
 	node_t *cur = list->head;
 	assert(cur != NULL);
 	do {
-		if (match(data,cur->data))
+		if (cur->data == data)
 		{
 			if (pre != NULL)
 				pre->next = cur->next;
@@ -131,6 +143,17 @@ void list_remove(list_t *list, void *data, int (*match)(void *, void*))
 		}
 		pre = cur;
 	} while((cur = cur->next));	
+}
+
+void *list_get_next(list_t *list, void *data)
+{
+	node_t *cur = list->head;
+	assert(cur != NULL);
+	do {
+		if(cur->data == data && cur->next)
+			return cur->next->data;
+	} while((cur = cur->next));
+	return NULL;
 }
 
 int list_is_empty(list_t *list)
