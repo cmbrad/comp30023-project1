@@ -124,15 +124,26 @@ int list_modify(list_t *list, void *data, modify_func modify)
 
 //int list_for_each_at(list_t *list, void* start, void(*
 
-void *list_select(list_t *list, void *data, match_func match, select_func select)
+/* Iterates over a list and compares all values against an (optional) static
+ * value using the specified match function, and also compares values against
+ * the current best value using the specified select function.
+ * list: List to iterate over
+ * data: Static data to compare against (Optional)
+ * match: Function to use when comparing to data (Optional)
+ * select: Function to use when comparing to best selected value so far
+ *
+ * Returns pointer to the data of value which best matches given criteria. */
+void *list_select(list_t *list, void *data, match_func match, select_func sel)
 {
 	void *res = NULL;
 	node_t *cur = list->head;
 	assert(cur != NULL);
 
 	do {
-		if (match(cur->data, data))
-			res = select(res, cur->data);
+		// Might not want to always compare to a static value,
+		// This data and match may be NULL. If so ignore them.
+		if (match == NULL || match(cur->data, data))
+			res = sel(res, cur->data);
 	} while ((cur = cur->next));
 
 	return res;

@@ -37,6 +37,7 @@ void *best_get_addr(void *, void *);
 void *worst_get_addr(void *, void *);
 void *next_get_addr(void *, void *);
 
+void *select_process(void *, void *);
 
 // Lets not go adding arguments to all our functions...
 int last_address;
@@ -227,28 +228,30 @@ void *worst_get_addr(void *a, void *b)
 
 process_t *swap_process(list_t *memory, list_t *free_list)
 {
-	process_t *cur_proc = NULL;
 	memory_t *to_swap = NULL;
-	memory_t *cur_mem = NULL;
-	node_t *cur_node = memory->head;
 
-	assert(cur_node != NULL);
-	do {
-		cur_mem = ((memory_t *)cur_node->data);
-		cur_proc = cur_mem->process;
-		if (to_swap == NULL ||
-			cur_proc->size > to_swap->process->size ||
-			(cur_proc->size == to_swap->process->size && cur_proc->last_loaded < to_swap->process->last_loaded))
-			to_swap = cur_mem;
-	} while ((cur_node = cur_node->next));
+	// list_select can take a value and a function by which
+	// each value in the list is compared to the specified static
+	// value to see if it should be selected. In this case
+	// we have nothing to compare against so specify NULL
+	to_swap = list_select(memory, NULL, NULL, select_process);
+	assert(to_swap != NULL);
 
 	list_remove(memory, to_swap);
 	add_free(free_list, to_swap);
-	
-	to_swap->process->swap_count++;
 
-	assert(to_swap != NULL);
+	to_swap->process->swap_count++;
 	return to_swap->process;
+}
+
+void *select_process(void *a, void *b)
+{
+	memory_t *best = (memory_t *)a;
+	memory_t *curr = (memory_t *)b;
+
+	if (best == NULL || curr->size > best->size || (curr->size == best->size && curr->process->last_loaded < best->process->last_loaded))
+		return curr;
+	return best;
 }
 
 void add_free(list_t *free_list, memory_t *rem)
@@ -280,7 +283,6 @@ int get_mem_usage(list_t *memory)
 	} while ((cur_node = cur_node->next));
 	return usage;
 }
-
 
 // If a process needs to be swapped out, choose the one which has
 // the largest size. If two processes are of equal size then
