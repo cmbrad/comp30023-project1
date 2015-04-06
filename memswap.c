@@ -118,8 +118,8 @@ int main(int argc, char **argv)
 		// Print information string...
 		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*((float)get_mem_usage(memory)/memsize))));
 		
-		print_free(free_list);
-		print_mem(memory);
+		//print_free(free_list);
+		//print_mem(memory);
 		//print_que(process_list);
 
 		// Time advances at a constant rate! In this universe anyway..
@@ -180,13 +180,34 @@ int get_addr(list_t *free_list, process_t *process, select_func sel_get_addr)
 {
 	memory_t *chosen = NULL;
 	memory_t *last = NULL;
+
+	//printf("WTF\n");
+	//print_free(free_list);
 	
 	if (list_is_empty(free_list))
+	{
+		//printf("empty\n");
 		return -1;
+	}
+
+	//printf("okay.\n");
 
 	last = list_select(free_list, &last_address, match_addr, first_get_addr);
-	chosen = list_select_from(free_list, last, &process->size, match_addr, sel_get_addr);
+	
+	//printf("WTF2\n");
+	//print_free(free_list);
 
+	chosen = list_select_from(free_list, last, &process->size, match_addr, sel_get_addr);
+	
+	//printf("WTF3\n");
+	//print_free(free_list);
+
+	//if (chosen == NULL)
+	//{
+	//	printf("NO SPACE IN FREE LIST FOR size=%d\n", process->size);
+	//	print_free(free_list);
+	//	printf("------\n");
+	//}
 	return chosen != NULL ? chosen->addr : -1;
 }
 
@@ -252,9 +273,17 @@ process_t *swap_process(list_t *memory, list_t *free_list)
 	to_swap = list_select(memory, NULL, NULL, select_process);
 	assert(to_swap != NULL);
 
+	//printf("Swapping out pid=%d\n", to_swap->process->pid);
 	list_remove(memory, to_swap);
+	
+	//printf("BEFORE\n");
+	//print_free(free_list);
+
 	add_free(free_list, to_swap);
 
+	//printf("Free now: \n");
+	//print_free(free_list);
+	//printf("END: \n");
 	to_swap->process->swap_count++;
 	return to_swap->process;
 }
@@ -276,13 +305,18 @@ void add_free(list_t *free_list, memory_t *rem)
 	{
 		// Free memory is not contiguous and cannot be combined,
 		// or there is no free memory. Create a new free block.
+		//printf("++++++++++++++++\n");
+		//print_free(free_list);
 		memory_t *new_free = malloc(sizeof(memory_t));
 		new_free->process = NULL;
 		new_free->addr = rem->addr;
 		new_free->size = rem->size;
 
 		list_push_o(free_list, new_free, process_cmp);
+		//print_free(free_list);
+		//printf("&&&&&&&&&&&&&&&&&&&&\n");
 	}
+	//printf("SDDDDDDDDDDDDDDDDDDDDDDDDDDD\n");
 }
 
 int get_mem_usage(list_t *memory)
@@ -328,8 +362,13 @@ int remove_free(list_t *list, void *a, void *b)
 		// If a portion of free memory is reduced to
 		// size zero then remove it.
 		if (m1->size == 0)
-			list_remove(list, m2);
+		{
+			list_remove(list, m1);
+			//list_remove(list, m2);
+			//printf("REMOVE\n");
+		}
 
+		assert(m1->size >=0);
 		return 1;
 	}
 
@@ -342,8 +381,11 @@ int add_free_part(list_t *list, void *a, void *b)
 	memory_t *m2 = (memory_t *)b;
 	memory_t *next = NULL;
 
+	//printf("B:\n");
+	//print_free(list);
 	if (m1->addr == m2->addr + m2->size)
 	{
+		//printf("lol\n");
 		// Block which was freed is directly before a free block.
 		// Extend the current block into the previous block.
 		m1->addr = m2->addr;
@@ -354,23 +396,40 @@ int add_free_part(list_t *list, void *a, void *b)
 		// Block which was freed occurs directly after a free block.
 		// Extend the current free block into the next
 		m1->size += m2->size;
+		//printf("jks\n");
+		//print_free(list);
 		
 		if ((next = list_get_next(list, m1)) != NULL)
 		{
 			m1->size += next->size;
-			list_modify(list, next, remove_free);
+			//printf("man\n");
+			//print_free(list);
+			//printf("Remove item at addr=%d\n", next->addr);
+			list_remove(list,next);
+			//print_free(list);
+			//list_modify(list, next, remove_free);
 		}
 	}
 	else
-		return 0;
+	{
+		//printf("add_free_part fail\n");
 
+		return 0;
+	}
+	//printf("A:\n");
+	//print_free(list);
+	//printf("add_free_part success\n");
 	return 1;
 }
 
 void print_free(list_t *free_list)
 {
 	printf("Free memory (addr,size) (%d): ", free_list->node_count);
-	list_for_each(free_list, print_free_data);
+	if (!list_is_empty(free_list))
+		list_for_each(free_list, print_free_data);
+	//if (free_list->foot != NULL)
+	//	printf("\nfoot->next=%p.\n",free_list->foot->next);
+	//else
 	printf(".\n");
 }
 
@@ -383,7 +442,8 @@ void print_free_data(void *data)
 void print_mem(list_t *memory)
 {
 	printf("Real memory (pid,addr,size) (%d): ", memory->node_count);
-	list_for_each(memory, print_memory_data);
+	if (!list_is_empty(memory))
+		list_for_each(memory, print_memory_data);
 	printf(".\n");
 }
 
@@ -396,7 +456,8 @@ void print_memory_data(void *data)
 void print_que(list_t *queue)
 {
 	printf("Process Queue (pid,size,last_loaded,swap_count) (%d): ", queue->node_count);
-	list_for_each(queue, print_process_data);
+	if (!list_is_empty(queue))
+		list_for_each(queue, print_process_data);
 	printf(".\n");
 }
 
