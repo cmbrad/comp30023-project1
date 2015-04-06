@@ -124,6 +124,20 @@ int list_modify(list_t *list, void *data, modify_func modify)
 
 //int list_for_each_at(list_t *list, void* start, void(*
 
+void *list_select(list_t *list, void *data, match_func match, select_func select)
+{
+	void *res = NULL;
+	node_t *cur = list->head;
+	assert(cur != NULL);
+
+	do {
+		if (match(cur->data, data))
+			res = select(res, cur->data);
+	} while ((cur = cur->next));
+
+	return res;
+}
+
 void list_remove(list_t *list, void *data)
 {
 	node_t *pre = NULL;

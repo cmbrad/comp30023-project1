@@ -2,6 +2,9 @@
 
 #ifndef INCLUDE_LIST_H
 #define INCLUDE_LIST_H
+typedef int (*match_func)(void *, void*);
+typedef void *(*select_func)(void *, void*);
+
 typedef struct node {
 	void *data;
 	struct node *next;
@@ -28,6 +31,7 @@ void *list_get_next(list_t *list, void *data);
 void list_for_each(list_t *list, void (*list_with)(void *));
 void list_remove(list_t *list, void *data);
 int list_modify(list_t *list, void *data, modify_func modify);
+void *list_select(list_t *, void *, match_func, select_func);
 
 int list_is_empty(list_t *list);
 unsigned int list_count(list_t *list);

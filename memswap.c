@@ -14,8 +14,6 @@
 
 #define SWAP_LIMIT 3
 
-typedef memory_t *(*addr_func)(memory_t *, memory_t *, process_t *);
-
 process_t *swap_process(list_t *memory, list_t *free_list);
 void add_free(list_t *free_list, memory_t *rem);
 int process_cmp(void *cmp1, void *cmp2);
@@ -32,11 +30,13 @@ void print_process_data(void *data);
 
 int get_arguments(int argc, char **argv, char **algorithm_name, char **filename, int *memsize);
 
-int get_addr(list_t *, process_t *, addr_func);
-memory_t *best_get_addr(memory_t *best, memory_t *cand, process_t *process);
-memory_t *first_get_addr(memory_t *best, memory_t *cand, process_t *process);
-memory_t *worst_get_addr(memory_t *best, memory_t *cand, process_t *process);
-memory_t *next_get_addr(memory_t *best, memory_t *cand, process_t *process);
+int get_addr(list_t *, process_t *, select_func);
+int match_addr(void *, void *);
+void *first_get_addr(void *, void *);
+void *best_get_addr(void *, void *);
+void *worst_get_addr(void *, void *);
+void *next_get_addr(void *, void *);
+
 
 // Lets not go adding arguments to all our functions...
 int last_address;
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 
 	// Function pointer pointing to an address function
 	// corresponding to the algorithm the user specified.
-	addr_func alg_get_addr  = NULL;
+	select_func alg_get_addr  = NULL;
 	if (strcmp(algorithm_name, "first") == 0)
 		alg_get_addr = &first_get_addr;
 	else if (strcmp(algorithm_name, "best") == 0)
@@ -175,39 +175,51 @@ int get_arguments(int argc, char **argv, char **algorithm_name, char **filename,
 }
 
 
-int get_addr(list_t *free_list, process_t *process, addr_func get_new_addr)
+int get_addr(list_t *free_list, process_t *process, select_func sel_get_addr)
 {
 	memory_t *chosen = NULL;
-	node_t *cur = free_list->head;
-
+	
 	if (list_is_empty(free_list))
 		return -1;
 
-	do {
-		memory_t *cur_mem = (memory_t *)cur->data;
-		if (cur_mem->size >= process->size)
-			chosen = get_new_addr(chosen, cur_mem, process);
-	} while ((cur = cur->next));
+	chosen = list_select(free_list, &process->size, match_addr, sel_get_addr);
 
 	return chosen != NULL ? chosen->addr : -1;
 }
 
-memory_t *first_get_addr(memory_t *best, memory_t *cand, process_t *process)
+int match_addr(void *a, void *b)
 {
+	int cand = ((memory_t *)a)->size;
+	int want = *(int *)b;
+
+	return cand >= want;
+}
+
+void *first_get_addr(void *a, void *b)
+{
+	memory_t *best = (memory_t *)a;
+	memory_t *cand = (memory_t *)b;
+
 	if(best == NULL)
 		return cand;
 	return best;
 }
 
-memory_t *best_get_addr(memory_t *best, memory_t *cand, process_t *process)
+void *best_get_addr(void *a, void *b)
 {
+	memory_t *best = (memory_t *)a;
+	memory_t *cand = (memory_t *)b;
+
 	if(best == NULL || best->size >= cand->size)
 		return cand;
 	return best;
 }
 
-memory_t *worst_get_addr(memory_t *best, memory_t *cand, process_t *process)
+void *worst_get_addr(void *a, void *b)
 {
+	memory_t *best = (memory_t *)a;
+	memory_t *cand = (memory_t *)b;
+
 	if(best == NULL || best->size <= cand->size)
 		return cand;
 	return best;
