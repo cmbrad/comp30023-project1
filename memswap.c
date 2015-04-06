@@ -76,13 +76,13 @@ int main(int argc, char **argv)
 	// corresponding to the algorithm the user specified.
 	select_func alg_get_addr  = NULL;
 	if (strcmp(algorithm_name, "first") == 0)
-		alg_get_addr = &first_get_addr;
+		alg_get_addr = first_get_addr;
 	else if (strcmp(algorithm_name, "best") == 0)
-		alg_get_addr = &best_get_addr;
+		alg_get_addr = best_get_addr;
 	else if (strcmp(algorithm_name, "worst") == 0)
-		alg_get_addr = &worst_get_addr;
-	//else if (strcmp(algorithm_name, "next") == 0)
-	//	get_addr = &next_get_addr;
+		alg_get_addr = worst_get_addr;
+	else if (strcmp(algorithm_name, "next") == 0)
+		alg_get_addr = next_get_addr;
 	else
 	{
 		printf("ERROR: Invalid algorithm specified.\n");
@@ -118,8 +118,8 @@ int main(int argc, char **argv)
 		// Print information string...
 		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*((float)get_mem_usage(memory)/memsize))));
 		
-		//print_free(free_list);
-		//print_mem(memory);
+		print_free(free_list);
+		print_mem(memory);
 		//print_que(process_list);
 
 		// Time advances at a constant rate! In this universe anyway..
@@ -179,11 +179,13 @@ int get_arguments(int argc, char **argv, char **algorithm_name, char **filename,
 int get_addr(list_t *free_list, process_t *process, select_func sel_get_addr)
 {
 	memory_t *chosen = NULL;
+	memory_t *last = NULL;
 	
 	if (list_is_empty(free_list))
 		return -1;
 
-	chosen = list_select(free_list, &process->size, match_addr, sel_get_addr);
+	last = list_select(free_list, &last_address, match_addr, first_get_addr);
+	chosen = list_select_from(free_list, last, &process->size, match_addr, sel_get_addr);
 
 	return chosen != NULL ? chosen->addr : -1;
 }
@@ -223,6 +225,19 @@ void *worst_get_addr(void *a, void *b)
 
 	if(best == NULL || best->size <= cand->size)
 		return cand;
+	return best;
+}
+
+void *next_get_addr(void *a, void *b)
+{
+	memory_t *best = (memory_t *)a;
+	memory_t *cand = (memory_t *)b;
+
+	if(best == NULL)
+	{
+		last_address = cand->addr;
+		return cand;
+	}
 	return best;
 }
 

@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "list.h"
+node_t *get_node_for(list_t *list, void *data);
 
 list_t *list_new(size_t data_size)
 {
@@ -147,6 +148,51 @@ void *list_select(list_t *list, void *data, match_func match, select_func sel)
 	} while ((cur = cur->next));
 
 	return res;
+}
+
+void *list_select_from(list_t *list, void *start, void *data, match_func match, select_func sel)
+{
+	void *res = NULL;
+	node_t *cur = NULL;
+	int first_iter = 1;
+
+	// If a start point was specified 
+	if (start == NULL)
+		cur = list->head;
+	else
+	{
+		cur = get_node_for(list,start);
+		list->foot->next = list->head;
+	}
+
+	assert(cur != NULL);
+
+	do {
+		if (start != NULL && !first_iter && cur->data == start)
+			break;
+		first_iter = 0;
+
+		// Might not want to always compare to a static value,
+		// This data and match may be NULL. If so ignore them.
+		if (match == NULL || match(cur->data, data))
+			res = sel(res, cur->data);
+	} while ((cur = cur->next));
+
+	list->foot->next = NULL;
+
+	return res;
+}
+
+node_t *get_node_for(list_t *list, void *data)
+{
+	node_t *cur = list->head;
+
+	do {
+		if (cur->data == data)
+			return cur;
+	} while ((cur = cur->next));
+
+	return NULL;
 }
 
 void list_remove(list_t *list, void *data)

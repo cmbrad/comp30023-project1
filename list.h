@@ -33,6 +33,8 @@ void list_remove(list_t *list, void *data);
 int list_modify(list_t *list, void *data, modify_func modify);
 void *list_select(list_t *, void *, match_func, select_func);
 
+void *list_select_from(list_t *list, void *start, void *data, match_func match, select_func sel);
+
 int list_is_empty(list_t *list);
 unsigned int list_count(list_t *list);
 #endif
