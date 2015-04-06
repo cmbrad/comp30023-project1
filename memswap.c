@@ -32,6 +32,9 @@ memory_t *first_get_addr(memory_t *best, memory_t *cand, process_t *process);
 memory_t *worst_get_addr(memory_t *best, memory_t *cand, process_t *process);
 memory_t *next_get_addr(memory_t *best, memory_t *cand, process_t *process);
 
+// Lets not go adding arguments to all our functions...
+int last_address;
+
 int main(int argc, char **argv)
 {
 	int c, memsize;
@@ -75,6 +78,9 @@ int main(int argc, char **argv)
 	}
 	//printf("filename: %s algorithm_name: %s memsize: %d\n", filename, algorithm_name, memsize);
 
+	// Last address we've looked at is the start.
+	last_address = 0;
+
 	// Parse the process file to obtain the initial queue of processes waiting to be swapped into memory.
 	list_t *process_list = load_processes_from(filename);
 
@@ -83,17 +89,16 @@ int main(int argc, char **argv)
 
 	// Free list holds all the cards!
 	list_t *free_list = list_new(sizeof(memory_t));
-	
+
+	// Initialise free memory to have a whole lot of nothing.
 	memory_t *init_memory = malloc(sizeof(memory_t));
 	init_memory->process = NULL;
 	init_memory->addr = 0;
-	init_memory->size = memsize;
-	
+	init_memory->size = memsize;	
 	list_push(free_list, init_memory);
 
-	// Function pointers we use to load into memory - they correspond to what algorithm we chose earlier.
-	//void (*load_process)(process_t);
-
+	// Function pointer pointing to an address function
+	// corresponding to the algorithm the user specified.
 	addr_func alg_get_addr  = NULL;
 	if (strcmp(algorithm_name, "first") == 0)
 		alg_get_addr = &first_get_addr;
@@ -144,17 +149,6 @@ int main(int argc, char **argv)
 		// Time advances at a constant rate! In this universe anyway..
 		time += 1;
 	} while ((cur = cur->next));
-
-	// have equal largest size, choose the one which has been in memory the longest (measured from the
-	// time it was most recently placed in memory).
-
-	// After a process has been swapped out, it is placed at the end of the queue of processes waiting to
-	// be swapped in.
-
-	// Once a process has been swapped out for the third time, we assume the process has finished and
-	// it is not re-queued. Note that not all processes will be swapped out for three times.
-
-	// The simulation should terminate once no more processes are waiting to be swapped into memory
 
 	// Clean up
 	list_destroy(memory);
