@@ -30,6 +30,8 @@ void print_free_data(void *data);
 void print_memory_data(void *data);
 void print_process_data(void *data);
 
+int get_arguments(int argc, char **argv, char **algorithm_name, char **filename, int *memsize);
+
 int get_addr(list_t *, process_t *, addr_func);
 memory_t *best_get_addr(memory_t *best, memory_t *cand, process_t *process);
 memory_t *first_get_addr(memory_t *best, memory_t *cand, process_t *process);
@@ -41,46 +43,14 @@ int last_address;
 
 int main(int argc, char **argv)
 {
-	int c, memsize;
+	int memsize;
 	char *filename, *algorithm_name;
 
+	filename = algorithm_name = NULL;
 	memsize = -1;
-	filename = algorithm_name = NULL;	
-	while ((c=getopt(argc, argv, "a:f:m:")) != -1)
-	{
-		switch (c)
-		{
-			case 'a':
-				algorithm_name = optarg;
-				break;
-			case 'f':
-				filename = optarg;
-				break;
-			case 'm':
-				memsize = atoi(optarg);
-				break;
-			default:
-				printf(USAGE);
-				return 1;
-		}
-	}
 
-	int all_given = 1;
-	if (filename == NULL) {
-		printf("ERROR: No filename specified.\n");
-		all_given = 0;
-	} if (algorithm_name == NULL) {
-		printf("ERROR: No algorithm specified.\n");
-		all_given = 0;
-	} if (memsize <= 0) {
-		printf("ERROR: Memory size must be greater than 0.\n");
-		all_given = 0;
-	}
-
-	if (!all_given) {
+	if (!get_arguments(argc, argv, &algorithm_name, &filename, &memsize))
 		return 1;
-	}
-	//printf("filename: %s algorithm_name: %s memsize: %d\n", filename, algorithm_name, memsize);
 
 	// Last address we've looked at is the start.
 	last_address = 0;
@@ -117,6 +87,7 @@ int main(int argc, char **argv)
 		printf("ERROR: Invalid algorithm specified.\n");
 		return 1;
 	}
+
 	int time = 0;
 	// Load the processes from the queue into memory, one by one, according to one of the four algorithms.
 	node_t *cur = process_list->head;
@@ -146,9 +117,9 @@ int main(int argc, char **argv)
 		// Print information string...
 		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*((float)get_mem_usage(memory)/memsize))));
 		
-		print_free(free_list);
-		print_mem(memory);
-		print_que(process_list);
+		//print_free(free_list);
+		//print_mem(memory);
+		//print_que(process_list);
 
 		// Time advances at a constant rate! In this universe anyway..
 		time += 1;
@@ -161,6 +132,48 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+
+int get_arguments(int argc, char **argv, char **algorithm_name, char **filename, int *memsize)
+{
+	int c;
+
+	while ((c=getopt(argc, argv, "a:f:m:")) != -1)
+	{
+		switch (c)
+		{
+			case 'a':
+				*algorithm_name = optarg;
+				break;
+			case 'f':
+				*filename = optarg;
+				break;
+			case 'm':
+				*memsize = atoi(optarg);
+				break;
+			default:
+				printf(USAGE);
+				return 0;
+		}
+	}
+
+	int all_given = 1;
+	if (*filename == NULL) {
+		printf("ERROR: No filename specified.\n");
+		all_given = 0;
+	} if (*algorithm_name == NULL) {
+		printf("ERROR: No algorithm specified.\n");
+		all_given = 0;
+	} if (*memsize <= 0) {
+		printf("ERROR: Memory size must be greater than 0.\n");
+		all_given = 0;
+	}
+
+	if (!all_given) {
+		return 0;
+	}
+	return 1;
+}
+
 
 int get_addr(list_t *free_list, process_t *process, addr_func get_new_addr)
 {
