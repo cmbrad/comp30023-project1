@@ -122,6 +122,8 @@ int list_modify(list_t *list, void *data, modify_func modify)
 	return success;
 }
 
+//int list_for_each_at(list_t *list, void* start, void(*
+
 void list_remove(list_t *list, void *data)
 {
 	node_t *pre = NULL;

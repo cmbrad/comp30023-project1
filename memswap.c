@@ -26,6 +26,10 @@ int get_mem_usage(list_t *memory);
 int remove_free(list_t *list, void *a, void *b);
 int add_free_part(list_t *list, void *a, void *b);
 
+void print_free_data(void *data);
+void print_memory_data(void *data);
+void print_process_data(void *data);
+
 int get_addr(list_t *, process_t *, addr_func);
 memory_t *best_get_addr(memory_t *best, memory_t *cand, process_t *process);
 memory_t *first_get_addr(memory_t *best, memory_t *cand, process_t *process);
@@ -142,9 +146,9 @@ int main(int argc, char **argv)
 		// Print information string...
 		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*((float)get_mem_usage(memory)/memsize))));
 		
-		//print_free(free_list);
-		//print_mem(memory);
-		//print_que(process_list);
+		print_free(free_list);
+		print_mem(memory);
+		print_que(process_list);
 
 		// Time advances at a constant rate! In this universe anyway..
 		time += 1;
@@ -323,42 +327,39 @@ int add_free_part(list_t *list, void *a, void *b)
 
 void print_free(list_t *free_list)
 {
-	memory_t *cur_mem = NULL;
-	node_t *cur_node = free_list->head;
-
-	assert(cur_node != NULL);
-	printf("Free memory: ");
-	do {
-		cur_mem = (memory_t *)cur_node->data;
-		printf(" (%d, %d)", cur_mem->addr, cur_mem->size);
-	} while ((cur_node = cur_node->next));
+	printf("Free memory (addr,size) (%d): ", free_list->node_count);
+	list_for_each(free_list, print_free_data);
 	printf(".\n");
+}
+
+void print_free_data(void *data)
+{
+	memory_t *m = (memory_t *)data;
+	printf(" (%d, %d)", m->addr, m->size);
 }
 
 void print_mem(list_t *memory)
 {
-	memory_t *cur_mem = NULL;
-	node_t *cur_node = memory->head;
-
-	assert(cur_node != NULL);
-	printf("Real memory (%d): ", memory->node_count);
-	do {
-		cur_mem = (memory_t *)cur_node->data;
-		printf(" (addr=%d, size=%d, pid=%d)", cur_mem->addr, cur_mem->size, cur_mem->process->pid);
-	} while ((cur_node = cur_node->next));
+	printf("Real memory (pid,addr,size) (%d): ", memory->node_count);
+	list_for_each(memory, print_memory_data);
 	printf(".\n");
+}
+
+void print_memory_data(void *data)
+{
+	memory_t *m = (memory_t *)data;
+	printf(" (%d, %d, %d)", m->process->pid, m->addr, m->size);
 }
 
 void print_que(list_t *queue)
 {
-	process_t *cur_proc = NULL;
-	node_t *cur_node = queue->head;
-
-	assert(cur_node != NULL);
-	printf("Process Queue: ");
-	do {
-		cur_proc = (process_t *)cur_node->data;
-		printf(" (pid=%d, size=%d, last_loaded=%d, swap_count=%d)", cur_proc->pid, cur_proc->size, cur_proc->last_loaded, cur_proc->swap_count);
-	} while ((cur_node = cur_node->next));
+	printf("Process Queue (pid,size,last_loaded,swap_count) (%d): ", queue->node_count);
+	list_for_each(queue, print_process_data);
 	printf(".\n");
+}
+
+void print_process_data(void *data)
+{
+	process_t *p = (process_t *)data;
+	printf(" (%d, %d, %d, %d)", p->pid, p->size, p->last_loaded, p->swap_count);
 }
