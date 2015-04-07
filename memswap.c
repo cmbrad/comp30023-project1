@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 		list_modify(free_list, new_mem, remove_free);
 	
 		// Print information string...
-		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*((float)get_mem_usage(memory)/memsize))));
+		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*((double)get_mem_usage(memory)/memsize))));
 		
 		//print_free(free_list);
 		//print_mem(memory);
