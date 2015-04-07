@@ -174,11 +174,10 @@ int list_modify(list_t *list, void *data, modify_func modify)
 	return success;
 }
 
-//int list_for_each_at(list_t *list, void* start, void(*
-
 /* Iterates over a list and compares all values against an (optional) static
  * value using the specified match function, and also compares values against
  * the current best value using the specified select function.
+ *
  * list: List to iterate over
  * data: Static data to compare against (Optional)
  * match: Function to use when comparing to data (Optional)

@@ -178,80 +178,107 @@ int get_arguments(int argc, char **argv, char **algorithm_name, char **filename,
 }
 
 
+/* Returns an address in memory which a new process should be inserted at. If
+ * the addr function corresponding to the 'next fit' algorithm is specified
+ * the global variable last_address is considered (otherwise it will be zero)
+ *
+ * free_list: List of free memory to try and insert into
+ * process: Process to insert into memory
+ * sel_get_addr: Pointer to a function which decides what address to choose.
+ *               Different for diff algorithms ie first/worst/best/next
+ * 
+ * Returns an int as a location to insert to in memory, or -1 if no space.*/
 int get_addr(list_t *free_list, process_t *process, select_func sel_get_addr)
 {
 	memory_t *chosen = NULL;
 	memory_t *last = NULL;
-
-	//printf("WTF\n");
-	//print_free(free_list);
 	
 	if (list_is_empty(free_list))
-	{
-		//printf("empty\n");
 		return -1;
-	}
 
-	//printf("okay.\n");
-	//printf("GET LAST\n");
 	last = list_select(free_list, &last_address, match_addr, first_get_addr);
-	//printf("END GET LAST\n");
-	
-	//printf("WTF2\n");
-	//print_free(free_list);
-
-	//if (last != NULL)
-	//	printf("Beginning search from addr=%d (%d)\n", last_address, last->addr);
-	
 	chosen = list_select_from(free_list, last, &process->size, match_size, sel_get_addr);
 	
-	//printf("last=%d\n",last_address);
-	//printf("WTF3\n");
-	//print_free(free_list);
-
-	//if (chosen == NULL)
-	//{
-	//	printf("NO SPACE IN FREE LIST FOR size=%d\n", process->size);
-	//	print_free(free_list);
-	//	printf("------\n");
-	//}
 	return chosen != NULL ? chosen->addr : -1;
 }
 
+/* Match function which is passed into a list object which decides whether
+ * the memory address (our virtual integer one)  of an item in the list
+ * occurs after a specified address. Used with the free list.
+ *
+ *  a: Item from the list to test.
+ *  b: Condition to satisfy - A valid int address in free memory list.
+ *
+ *  Returns 1 if the condition is met (b occurs after a), otherwise 0.*/
 int match_addr(void *a, void *b)
 {
 	int cand = ((memory_t *)a)->addr;
 	int want = *(int *)b;
 
-	//printf("cand=%d, want=%d\n",cand, want);
 	return cand >= want;
 }
 
+/* Match function which is passed into a list object which decides whether
+ * the size of the virtual memory object (size being part of the memory_t
+ * struct) is greater than than of a diff, static size. Used with free list.
+ *
+ * a: memory_t var to test against b.
+ * b: Integer referring to a size of a memory location (Should be >=0)
+ *
+ * Returns 1 if the size of a is greater, or 0 otherwise.*/
 int match_size(void *a, void *b)
 {
 	int cand = ((memory_t *)a)->size;
 	int want = *(int *)b;
 
+	assert(cand >= 0 && want >= 0);
+
 	return cand >= want;
 }
 
+/* Select function which is passed into a list which tests a given item
+ * from the list against the item which currently best satisifies selection
+ * criteria for first fit algorithm. Criteria are if nothing is selected then
+ * select the new item, else return the already selected item. Assume all
+ * input is valid as has been validated to earlier call to a corresponding
+ * match function.
+ *
+ * a: Current 'best' item from the list
+ * b: memory_t item from the list to test against a.
+ *
+ * Returns a pointer to b if it's a better match, else return a. */
 void *first_get_addr(void *a, void *b)
 {
 	memory_t *best = (memory_t *)a;
 	memory_t *cand = (memory_t *)b;
 
-	//printf("a->addr=%d, b->addr=%d\n", a == NULL ? -1 : best->addr, cand->addr);
+	// Only want the first item. (Assume earlier call to a match function
+	// means that all items are valid) Therefore if nothing is selected,
+	// select the first item given! If something is selected then ignore
+	// all new items.
 	if(best == NULL)
 		return cand;
 	return best;
 }
 
+/* Select function to be passed into a list to test a against b with
+ * criteria satisfying the best fit algorithm. Criteria are that if
+ * no items have been selected, or if the size of the 'new' list item
+ * b is equal to or smaller than that of the best item. Assume earlier
+ * match call has validated input so it is valid.
+ *
+ * a: Current best item from the list
+ * b: memory_t item from the list to test against a
+ *
+ * Returns a pointer to b if it's a better match to criteria, else a.*/
 void *best_get_addr(void *a, void *b)
 {
 	memory_t *best = (memory_t *)a;
 	memory_t *cand = (memory_t *)b;
 
-	if(best == NULL || best->size >= cand->size)
+	// Fancier than first fit! Not only do we want the first item
+	// we want the smallest item given as judged by the size propery.
+	if(best == NULL || cand->size <= best->size)
 		return cand;
 	return best;
 }
