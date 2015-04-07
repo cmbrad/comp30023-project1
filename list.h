@@ -35,6 +35,8 @@ void *list_select(list_t *, void *, match_func, select_func);
 
 void *list_select_from(list_t *list, void *start, void *data, match_func match, select_func sel);
 
+void list_insert(list_t *list, void *data, cmp_func cmp);
+
 int list_is_empty(list_t *list);
 unsigned int list_count(list_t *list);
 #endif

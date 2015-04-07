@@ -113,6 +113,7 @@ int main(int argc, char **argv)
 				list_push(process_list, to_swap);
 		}
 		list_push(memory, new_mem);
+		//print_free(free_list);
 		list_modify(free_list, new_mem, remove_free);
 	
 		// Print information string...
@@ -300,6 +301,7 @@ void *select_process(void *a, void *b)
 
 void add_free(list_t *free_list, memory_t *rem)
 {
+	//printf("HELLO WORLD THIS IS ME CAN'T YOU SEE\n");
 	// Try to combine newly freed memory with a current free block
 	if (list_is_empty(free_list) || !list_modify(free_list, rem, add_free_part))
 	{
@@ -312,7 +314,8 @@ void add_free(list_t *free_list, memory_t *rem)
 		new_free->addr = rem->addr;
 		new_free->size = rem->size;
 
-		list_push_o(free_list, new_free, process_cmp);
+		list_insert(free_list, new_free, process_cmp);
+		//list_push_o(free_list, new_free, process_cmp);
 		//print_free(free_list);
 		//printf("&&&&&&&&&&&&&&&&&&&&\n");
 	}
@@ -341,10 +344,10 @@ int process_cmp(void *cmp1, void *cmp2)
 	memory_t *m1 = (memory_t *)cmp1;
 	memory_t *m2 = (memory_t *)cmp2;
 
-	if (m1->addr + m1->size > m2->addr)
+	if (m1->addr < m2->addr)
 		return -1;
-	else if (m1->addr + m1->size == m2->addr)
-		return 0;
+	//else if (m1->addr == m2->addr)
+	//	return 0;
 	else
 		return 1;
 }
@@ -356,9 +359,12 @@ int remove_free(list_t *list, void *a, void *b)
 
 	if (m1->addr == m2->addr)
 	{
+		//printf("Removal: %d",m1->addr);
 		m1->addr += m2->size;
 		m1->size -= m2->size;
+		//printf("->%d\n",m1->addr);
 
+		assert(m1->size >=0);
 		// If a portion of free memory is reduced to
 		// size zero then remove it.
 		if (m1->size == 0)
@@ -368,7 +374,6 @@ int remove_free(list_t *list, void *a, void *b)
 			//printf("REMOVE\n");
 		}
 
-		assert(m1->size >=0);
 		return 1;
 	}
 
@@ -395,11 +400,13 @@ int add_free_part(list_t *list, void *a, void *b)
 	{
 		// Block which was freed occurs directly after a free block.
 		// Extend the current free block into the next
+		//printf("%d->",m1->size);
 		m1->size += m2->size;
+		//printf("%d\n", m1->size);
 		//printf("jks\n");
 		//print_free(list);
 		
-		if ((next = list_get_next(list, m1)) != NULL)
+		if ((next = list_get_next(list, m1)) != NULL && m1->addr + m1->size == next->addr)
 		{
 			m1->size += next->size;
 			//printf("man\n");

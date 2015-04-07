@@ -56,6 +56,7 @@ void list_push_o(list_t *list, void *data, cmp_func cmp)
 	node_t *pre = NULL;
 	node_t *cur = list->head;
 
+	printf("ASDSDA\n");
 	// If the list is empty then just insert at the top.
 	if (cur == NULL)
 	{
@@ -68,6 +69,7 @@ void list_push_o(list_t *list, void *data, cmp_func cmp)
 		res = (*cmp)(cur->data, data);
 		if (res == -1)
 		{
+			printf("BEFORE\n");
 			if (pre != NULL)
 				pre->next = node;
 			else
@@ -78,6 +80,7 @@ void list_push_o(list_t *list, void *data, cmp_func cmp)
 		}
 		else if (res == 0 || res == 1)
 		{
+			printf("AFTER\n");
 			node->next = cur->next;
 			cur->next = node;
 
@@ -88,6 +91,50 @@ void list_push_o(list_t *list, void *data, cmp_func cmp)
 		pre = cur;
 	} while ((cur = cur->next));
 	list->node_count++;
+}
+
+void list_insert(list_t *list, void *data, cmp_func cmp)
+{
+	node_t *new, *cur, *pre;
+
+	//printf("LIST_INSERT\n");
+	new = malloc(sizeof(*new));
+	assert(new != NULL);
+	new->data = data;
+	new->next = NULL;
+
+	list->node_count++;
+
+	if (list->head == NULL) {
+		list->head = list->foot = new;
+		//printf("head null\n");
+		//list_push(list, data);
+		return;
+	}
+
+	pre = NULL;
+	cur = list->head;
+
+	while (cur != NULL && cmp(data, cur->data) == 1) {
+		//printf("cmp=%d\n",cmp(data,cur->data));
+		pre = cur;
+		cur = cur->next;
+	}
+
+	// Item is first in list
+	if (pre == NULL) {
+		//printf("start of list\n");
+		list->head = new;
+		new->next = cur;
+	} else if(cur == NULL) {
+		//printf("end of list\n");
+		pre->next = new;
+		list->foot = new;
+	} else {
+		//printf("middle.\n");
+		pre->next = new;
+		new->next = cur;
+	}
 }
 
 void *list_pop(list_t *list)
