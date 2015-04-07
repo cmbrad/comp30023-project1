@@ -32,6 +32,7 @@ int get_arguments(int argc, char **argv, char **algorithm_name, char **filename,
 
 int get_addr(list_t *, process_t *, select_func);
 int match_addr(void *, void *);
+int match_size(void *, void *);
 void *first_get_addr(void *, void *);
 void *best_get_addr(void *, void *);
 void *worst_get_addr(void *, void *);
@@ -192,14 +193,19 @@ int get_addr(list_t *free_list, process_t *process, select_func sel_get_addr)
 	}
 
 	//printf("okay.\n");
-
+	//printf("GET LAST\n");
 	last = list_select(free_list, &last_address, match_addr, first_get_addr);
+	//printf("END GET LAST\n");
 	
 	//printf("WTF2\n");
 	//print_free(free_list);
 
-	chosen = list_select_from(free_list, last, &process->size, match_addr, sel_get_addr);
+	//if (last != NULL)
+	//	printf("Beginning search from addr=%d (%d)\n", last_address, last->addr);
 	
+	chosen = list_select_from(free_list, last, &process->size, match_size, sel_get_addr);
+	
+	//printf("last=%d\n",last_address);
 	//printf("WTF3\n");
 	//print_free(free_list);
 
@@ -214,6 +220,15 @@ int get_addr(list_t *free_list, process_t *process, select_func sel_get_addr)
 
 int match_addr(void *a, void *b)
 {
+	int cand = ((memory_t *)a)->addr;
+	int want = *(int *)b;
+
+	//printf("cand=%d, want=%d\n",cand, want);
+	return cand >= want;
+}
+
+int match_size(void *a, void *b)
+{
 	int cand = ((memory_t *)a)->size;
 	int want = *(int *)b;
 
@@ -225,6 +240,7 @@ void *first_get_addr(void *a, void *b)
 	memory_t *best = (memory_t *)a;
 	memory_t *cand = (memory_t *)b;
 
+	//printf("a->addr=%d, b->addr=%d\n", a == NULL ? -1 : best->addr, cand->addr);
 	if(best == NULL)
 		return cand;
 	return best;

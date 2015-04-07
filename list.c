@@ -208,29 +208,32 @@ void *list_select_from(list_t *list, void *start, void *data, match_func match, 
 	int first_iter = 1;
 
 	// If a start point was specified 
-	if (start == NULL)
+	if (start == NULL) {
+		//printf("No start given. Starting from head. (%d items)\n", list->node_count);
 		cur = list->head;
-	else
+	} else
 	{
 		cur = get_node_for(list,start);
 		assert(cur != NULL);
+		//printf("Starting from some node.. (%d items)\n", list->node_count);
 		//printf("list->foot->next=%p\n",list->foot->next);
-		//list->foot->next = list->head;
+		list->foot->next = list->head;
 	}
 
 	assert(cur != NULL);
 
 	do {
+		//printf("loopin. start=%p, cur=%p\n", start, cur->data);
 		if (start != NULL && !first_iter && cur->data == start)
 			break;
 		first_iter = 0;
-
 		// Might not want to always compare to a static value,
 		// This data and match may be NULL. If so ignore them.
 		if (match == NULL || match(cur->data, data))
 			res = sel(res, cur->data);
 	} while ((cur = cur->next));
 
+	//printf("END\n");
 	list->foot->next = NULL;
 
 	return res;
