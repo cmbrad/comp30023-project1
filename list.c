@@ -90,7 +90,8 @@ void *list_pop(list_t *list)
 {
 	void *res;
 
-	assert(!list_is_empty(list));
+	if (list_is_empty(list))
+		return NULL;
 
 	node_t *next = list->head->next;
 	res = list->head->data;

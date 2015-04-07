@@ -91,13 +91,13 @@ int main(int argc, char **argv)
 
 	int time = 0;
 	// Load the processes from the queue into memory, one by one, according to one of the four algorithms.
-	node_t *cur = process_list->head;
-	do
+	process_t *cur = NULL;
+	while ((cur = list_pop(process_list)) != NULL)
 	{
 		// Allocate a new block of memory to add to the current
 		// active memory.
 		memory_t *new_mem = malloc(sizeof(memory_t));
-		new_mem->process = (process_t *)cur->data;
+		new_mem->process = cur;
 		new_mem->process->last_loaded = time;
 		new_mem->size = new_mem->process->size;
 		
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 
 		// Time advances at a constant rate! In this universe anyway..
 		time += 1;
-	} while ((cur = cur->next));
+	}
 
 	// Clean up
 	list_destroy(memory);
