@@ -136,6 +136,15 @@ int main(int argc, char **argv)
 	return 0;
 }
 
+/* Parses the arguments passed in via command line using getopt.
+ *
+ * argc: Number of arguments passed into the program
+ * argv: Pointers to the arguments passed in
+ * algorithm_name: Pointer to a char pointer to store algorithm name
+ * filename: Pointer to a char pointer to store filename
+ * memsize: Pointer to an integer to store size of virtual memory
+ *
+ * Returns 1 if fetching arguments succeeds, else returns 0. */
 int get_arguments(int argc, char **argv, char **algorithm_name, char **filename, int *memsize)
 {
 	int c;
@@ -243,7 +252,7 @@ int match_size(void *a, void *b)
  * input is valid as has been validated to earlier call to a corresponding
  * match function.
  *
- * a: Current 'best' item from the list
+ * a: Current best item from the list (first valid)
  * b: memory_t item from the list to test against a.
  *
  * Returns a pointer to b if it's a better match, else return a. */
@@ -267,7 +276,7 @@ void *first_get_addr(void *a, void *b)
  * b is equal to or smaller than that of the best item. Assume earlier
  * match call has validated input so it is valid.
  *
- * a: Current best item from the list
+ * a: Current best item from the list (Smallest size)
  * b: memory_t item from the list to test against a
  *
  * Returns a pointer to b if it's a better match to criteria, else a.*/
@@ -283,6 +292,15 @@ void *best_get_addr(void *a, void *b)
 	return best;
 }
 
+/* Select function to be a supplied to a list to test a against b. Here a
+ * is the current 'best' item to fit search criteria, test b to see if it
+ * is better than a. Better is defined as best being empty or being of
+ * smaller size than the new candidate, b.
+ *
+ * a: Current best item from the list (Largest size)
+ * b: Item from the list to test against a.
+ *
+ * Returns a pointer to b if it's a better match, else pointer to a.*/
 void *worst_get_addr(void *a, void *b)
 {
 	memory_t *best = (memory_t *)a;
@@ -293,6 +311,17 @@ void *worst_get_addr(void *a, void *b)
 	return best;
 }
 
+/* Select function to be a supplied to a list to test a against b. Here a
+ * is the current 'best' item to fit search criteria, test b to see if it
+ * is better than a. Better is defined as being the first valid item
+ * supplied to the function. If the item is considered the best then
+ * set the global variable last_address to be its address as the search
+ * should resume here next time.
+ *
+ * a: Current best item from the list. (First valid from last_address)
+ * b: Item from the list to test against a
+ *
+ * Returns a pointer to b if it's the first valid match, else return a.*/
 void *next_get_addr(void *a, void *b)
 {
 	memory_t *best = (memory_t *)a;
@@ -306,6 +335,16 @@ void *next_get_addr(void *a, void *b)
 	return best;
 }
 
+/* Scans through the supplied memory list to find the largest
+ * process, it is then swapped out of memory and placed onto
+ * the free list to be allocated to a different process. If
+ * two processes are of equal largest size then swap out the
+ * one that has been in memory the longest.
+ *
+ * memory: List of memory_t => Processes which are currently in memory
+ * free_list: List of memory_t representing unallocated memory.
+ *
+ * Returns a pointer to the process which was swapped out of memory. */
 process_t *swap_process(list_t *memory, list_t *free_list)
 {
 	memory_t *to_swap = NULL;
@@ -316,22 +355,24 @@ process_t *swap_process(list_t *memory, list_t *free_list)
 	// we have nothing to compare against so specify NULL
 	to_swap = list_select(memory, NULL, NULL, select_process);
 	assert(to_swap != NULL);
-
-	//printf("Swapping out pid=%d\n", to_swap->process->pid);
 	list_remove(memory, to_swap);
-	
-	//printf("BEFORE\n");
-	//print_free(free_list);
 
+	// Add the memory just swapped out to the list of free memory.
 	add_free(free_list, to_swap);
-
-	//printf("Free now: \n");
-	//print_free(free_list);
-	//printf("END: \n");
+	
 	to_swap->process->swap_count++;
 	return to_swap->process;
 }
 
+/* Select function which is passed into a list in order to find
+ * an item in the list which best satisfies criteria in this func.
+ * Criteria are that this is the first item passed in, that b
+ * is bigger than a, or that b has been in memory longer.
+ *
+ * a: Current best item from the list
+ * b: Item to test against a.
+ *
+ * Return a pointer to b if it is a better match, else a. */
 void *select_process(void *a, void *b)
 {
 	memory_t *best = (memory_t *)a;
@@ -344,25 +385,18 @@ void *select_process(void *a, void *b)
 
 void add_free(list_t *free_list, memory_t *rem)
 {
-	//printf("HELLO WORLD THIS IS ME CAN'T YOU SEE\n");
 	// Try to combine newly freed memory with a current free block
 	if (list_is_empty(free_list) || !list_modify(free_list, rem, add_free_part))
 	{
 		// Free memory is not contiguous and cannot be combined,
 		// or there is no free memory. Create a new free block.
-		//printf("++++++++++++++++\n");
-		//print_free(free_list);
 		memory_t *new_free = malloc(sizeof(memory_t));
 		new_free->process = NULL;
 		new_free->addr = rem->addr;
 		new_free->size = rem->size;
 
 		list_insert(free_list, new_free, process_cmp);
-		//list_push_o(free_list, new_free, process_cmp);
-		//print_free(free_list);
-		//printf("&&&&&&&&&&&&&&&&&&&&\n");
 	}
-	//printf("SDDDDDDDDDDDDDDDDDDDDDDDDDDD\n");
 }
 
 int get_mem_usage(list_t *memory)
