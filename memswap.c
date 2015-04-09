@@ -40,6 +40,8 @@ void *next_get_addr(void *, void *);
 
 void *select_process(void *, void *);
 
+int reduce_memory(void *a, void *b);
+
 // Lets not go adding arguments to all our functions...
 int last_address;
 
@@ -402,15 +404,18 @@ void add_free(list_t *free_list, memory_t *rem)
 int get_mem_usage(list_t *memory)
 {
 	int usage = 0;
-	memory_t *cur_mem = NULL;
-	node_t *cur_node = memory->head;
-
-	assert(cur_node != NULL);
-	do {
-		cur_mem = (memory_t *)cur_node->data;
-		usage += cur_mem->size;
-	} while ((cur_node = cur_node->next));
+	list_reduce(memory, &usage, reduce_memory);
 	return usage;
+}
+
+int reduce_memory(void *a, void *b)
+{
+	int *total = (int *)a;
+	memory_t *memory = (memory_t *)b;
+
+	*total += memory->size;
+
+	return -1;
 }
 
 // If a process needs to be swapped out, choose the one which has

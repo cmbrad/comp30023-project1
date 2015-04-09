@@ -280,6 +280,15 @@ void list_remove(list_t *list, void *data)
 	} while((cur = cur->next));	
 }
 
+void list_reduce(list_t *list, void *accum, int (*reduce_func)(void *a, void *b))
+{
+	node_t *cur = list->head;
+	assert(cur != NULL);
+	do {
+		reduce_func(accum, cur->data);
+	} while ((cur = cur->next));
+}
+
 void *list_get_next(list_t *list, void *data)
 {
 	node_t *cur = list->head;
