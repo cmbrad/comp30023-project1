@@ -442,22 +442,32 @@ void reduce_memory(void *a, void *b)
 	*total += memory->size;
 }
 
-// If a process needs to be swapped out, choose the one which has
-// the largest size. If two processes are of equal size then
-// choose the one which has been in memory longest.
-int process_cmp(void *cmp1, void *cmp2)
+/* Comparison function used to keep memory blocks sorted in order
+ * of (our fake virtual) memory addresses.
+ *
+ * a: Item 1 to compare
+ * b: Item 2 to compare
+ *
+ * Returns -1 if a has a lower address or 2 has an equal or higher address */
+int process_cmp(void *a, void *b)
 {
-	memory_t *m1 = (memory_t *)cmp1;
-	memory_t *m2 = (memory_t *)cmp2;
+	memory_t *m1 = (memory_t *)a;
+	memory_t *m2 = (memory_t *)b;
 
 	if (m1->addr < m2->addr)
 		return -1;
-	//else if (m1->addr == m2->addr)
-	//	return 0;
 	else
 		return 1;
 }
 
+/* Removes a portion of memory from the free list if the address of
+ * the memory we're examining is equal to the addres we're trying
+ * to remove. Used with list_modify.
+ *
+ * m1: Piece of memory we're examining
+ * m2: Piece of memory we're trying to remove
+ *
+ * Returns 1 if memory is found and removed, else 0. */
 int remove_free(list_t *list, void *a, void *b)
 {
 	memory_t *m1 = (memory_t *)a;
@@ -465,20 +475,17 @@ int remove_free(list_t *list, void *a, void *b)
 
 	if (m1->addr == m2->addr)
 	{
-		//printf("Removal: %d",m1->addr);
+		// Shrink the portion of memory.
+		// It might not necessarily all be
+		// used.
 		m1->addr += m2->size;
 		m1->size -= m2->size;
-		//printf("->%d\n",m1->addr);
 
-		assert(m1->size >=0);
+		assert(m1->size >= 0);
 		// If a portion of free memory is reduced to
 		// size zero then remove it.
 		if (m1->size == 0)
-		{
 			list_remove(list, m1);
-			//list_remove(list, m2);
-			//printf("REMOVE\n");
-		}
 
 		return 1;
 	}
@@ -486,17 +493,24 @@ int remove_free(list_t *list, void *a, void *b)
 	return 0;
 }
 
+
+/* Attempts to add a piece of memory to a piece of memory
+ * already in the free list. Checks to see if the new piece
+ * of memory is adjacent to any current pieces of memory, if
+ * so they either extend forward or backwards. 
+ *
+ * a: Piece of memory already in the free list
+ * b: Piece of memory we're trying to add
+ *
+ * Returns 1 if memory successfully modified, else 0. */
 int add_free_part(list_t *list, void *a, void *b)
 {
 	memory_t *m1 = (memory_t *)a;
 	memory_t *m2 = (memory_t *)b;
 	memory_t *next = NULL;
 
-	//printf("B:\n");
-	//print_free(list);
 	if (m1->addr == m2->addr + m2->size)
 	{
-		//printf("lol\n");
 		// Block which was freed is directly before a free block.
 		// Extend the current block into the previous block.
 		m1->addr = m2->addr;
@@ -506,52 +520,41 @@ int add_free_part(list_t *list, void *a, void *b)
 	{
 		// Block which was freed occurs directly after a free block.
 		// Extend the current free block into the next
-		//printf("%d->",m1->size);
 		m1->size += m2->size;
-		//printf("%d\n", m1->size);
-		//printf("jks\n");
-		//print_free(list);
 		
+		// As we've just extended a block forwards we may end up adjacent to another free
+		// block. If this occurs, extend into that too!
 		if ((next = list_get_next(list, m1)) != NULL && m1->addr + m1->size == next->addr)
 		{
 			m1->size += next->size;
-			//printf("man\n");
-			//print_free(list);
-			//printf("Remove item at addr=%d\n", next->addr);
+			// We've consumed this memory! Now we destroy it.
+			// MWAHAHAHAHAHAHAHAHAHA
 			list_remove(list,next);
-			//print_free(list);
-			//list_modify(list, next, remove_free);
 		}
 	}
 	else
-	{
-		//printf("add_free_part fail\n");
-
 		return 0;
-	}
-	//printf("A:\n");
-	//print_free(list);
-	//printf("add_free_part success\n");
+	
 	return 1;
 }
 
+/* Print the free list in a (relatively) human readable format. */
 void print_free(list_t *free_list)
 {
 	printf("Free memory (addr,size) (%d): ", free_list->node_count);
 	if (!list_is_empty(free_list))
 		list_for_each(free_list, print_free_data);
-	//if (free_list->foot != NULL)
-	//	printf("\nfoot->next=%p.\n",free_list->foot->next);
-	//else
 	printf(".\n");
 }
 
+/* Helper function used to print an individual block of free memory */
 void print_free_data(void *data)
 {
 	memory_t *m = (memory_t *)data;
 	printf(" (%d, %d)", m->addr, m->size);
 }
 
+/* Print the list of proccess in memory. */
 void print_mem(list_t *memory)
 {
 	printf("Real memory (pid,addr,size) (%d): ", memory->node_count);
@@ -560,12 +563,14 @@ void print_mem(list_t *memory)
 	printf(".\n");
 }
 
+/* Helper function used to print an individual block of used memory */
 void print_memory_data(void *data)
 {
 	memory_t *m = (memory_t *)data;
 	printf(" (%d, %d, %d)", m->process->pid, m->addr, m->size);
 }
 
+/* Print the list of processes waiting to get in to memory. */
 void print_que(list_t *queue)
 {
 	printf("Process Queue (pid,size,last_loaded,swap_count) (%d): ", queue->node_count);
@@ -574,6 +579,7 @@ void print_que(list_t *queue)
 	printf(".\n");
 }
 
+/* Helper function used to print an individual item from the process queue.*/
 void print_process_data(void *data)
 {
 	process_t *p = (process_t *)data;
