@@ -5,6 +5,8 @@
 typedef int (*match_func)(void *, void*);
 typedef void *(*select_func)(void *, void*);
 
+typedef void (*reduce_func)(void *, void *);
+
 typedef struct node {
 	void *data;
 	struct node *next;
@@ -35,7 +37,7 @@ void *list_select(list_t *, void *, match_func, select_func);
 
 void *list_select_from(list_t *list, void *start, void *data, match_func match, select_func sel);
 
-void list_reduce(list_t *list, void *accum, int (*reduce_func)(void *a, void *b));
+void list_reduce(list_t *list, void *accum, reduce_func);
 
 void list_insert(list_t *list, void *data, cmp_func cmp);
 

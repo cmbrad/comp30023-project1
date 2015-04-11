@@ -40,7 +40,7 @@ void *next_get_addr(void *, void *);
 
 void *select_process(void *, void *);
 
-int reduce_memory(void *a, void *b);
+void reduce_memory(void *a, void *b);
 
 // Lets not go adding arguments to all our functions...
 int last_address;
@@ -121,11 +121,13 @@ int main(int argc, char **argv)
 	
 		// Print information string...
 		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*(((double)get_mem_usage(memory))/memsize))));
-		
-		//print_free(free_list);
-		//print_mem(memory);
-		//print_que(process_list);
 
+		// Print debug information
+		#ifdef DEBUG
+		print_free(free_list);
+		print_mem(memory);
+		print_que(process_list);
+		#endif
 		// Time advances at a constant rate! In this universe anyway..
 		time += 1;
 	}
@@ -385,6 +387,16 @@ void *select_process(void *a, void *b)
 	return best;
 }
 
+/* Attempts to add a portion of memory to the free list.
+ * If the portion of memory, rem, is adjacent to a currently free block
+ * of memory then we combine the blocks of memory into one large block.
+ * If there is no free memory or the new block is not adjacent we create
+ * a new block of memory and add it to the free list.
+ *
+ * free_list: List of free memory locations and sizes
+ * rem: Piece of memory to add to the free list
+ *
+ * Returns nothing */
 void add_free(list_t *free_list, memory_t *rem)
 {
 	// Try to combine newly freed memory with a current free block
@@ -401,6 +413,12 @@ void add_free(list_t *free_list, memory_t *rem)
 	}
 }
 
+/* Gets the current total amount of memory used by
+ * all processes in memory.
+ *
+ * memory: List of all processes in memory.
+ *
+ * Returns an integer >= 0 representing memory usage in MB. */
 int get_mem_usage(list_t *memory)
 {
 	int usage = 0;
@@ -408,14 +426,20 @@ int get_mem_usage(list_t *memory)
 	return usage;
 }
 
-int reduce_memory(void *a, void *b)
+/* Function passed into list_reduce which is used in the summation
+ * of memory currently in use. Inspired by functional programming
+ * reduce function. Yay for ruby!
+ *
+ * a: Pointer to current running total of reduce.
+ * b: Item to add to the total.
+ *
+ * Returns nothing. */
+void reduce_memory(void *a, void *b)
 {
 	int *total = (int *)a;
 	memory_t *memory = (memory_t *)b;
 
 	*total += memory->size;
-
-	return -1;
 }
 
 // If a process needs to be swapped out, choose the one which has
