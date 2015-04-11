@@ -79,10 +79,9 @@ void list_insert(list_t *list, void *data, cmp_func cmp)
 
 	// We've inserted an item! Acknowledge that.
 	list->node_count++;
-
 	
 	// If the list is empty then just insert at the top
-	if (list_is_empty(list)) {
+	if (list->head == NULL) {
 		list->head = list->foot = new;
 		return;
 	}
@@ -219,17 +218,20 @@ void *list_select_from(list_t *list, void *start, void *data, match_func match, 
 	node_t *cur = NULL;
 	int first_iter = 1;
 
+	if (list_is_empty(list))
+		return NULL;
+
 	// If no start point was specified start from the beginning.
 	if (start == NULL)
 		cur = list->head;
-	else {
+	else
+	{
 		// Start from given start point
 		cur = get_node_for(list,start);
 		// Want to cover the whole list even if don't start at start.
 		// Set foot->next to head to make a loop
 		list->foot->next = list->head;
 	}
-
 	assert(cur != NULL);
 
 	do {
@@ -260,6 +262,7 @@ void *list_select_from(list_t *list, void *start, void *data, match_func match, 
 node_t *get_node_for(list_t *list, void *data)
 {
 	node_t *cur = list->head;
+	assert(cur != NULL);
 
 	do {
 		if (cur->data == data)

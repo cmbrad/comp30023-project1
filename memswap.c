@@ -110,17 +110,17 @@ int main(int argc, char **argv)
 		{
 			// Swap out a process to make room to allocate memory
 			process_t *to_swap = swap_process(memory, free_list);
+			assert(to_swap != NULL);
 			// Processes will not be requeued for execution if they've
 			// been swapped SWAP_LIMIT times.
 			if (to_swap->swap_count < SWAP_LIMIT)
 				list_push(process_list, to_swap);
 		}
 		list_push(memory, new_mem);
-		//print_free(free_list);
 		list_modify(free_list, new_mem, remove_free);
 	
 		// Print information string...
-		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil(100*(((double)get_mem_usage(memory))/memsize))));
+		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil((100.0*get_mem_usage(memory))/memsize)));
 
 		// Print debug information
 		#ifdef DEBUG
@@ -405,6 +405,7 @@ void add_free(list_t *free_list, memory_t *rem)
 		// Free memory is not contiguous and cannot be combined,
 		// or there is no free memory. Create a new free block.
 		memory_t *new_free = malloc(sizeof(memory_t));
+		assert(new_free != NULL);
 		new_free->process = NULL;
 		new_free->addr = rem->addr;
 		new_free->size = rem->size;
