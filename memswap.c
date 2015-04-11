@@ -63,13 +63,13 @@ int main(int argc, char **argv)
 	list_t *process_list = load_processes_from(filename);
 
 	// Assume memory is initially empty.
-	list_t *memory = list_new(sizeof(process_t));
+	list_t *memory = list_new();
 
 	// Free list holds all the cards!
-	list_t *free_list = list_new(sizeof(memory_t));
+	list_t *free_list = list_new();
 
 	// Initialise free memory to have a whole lot of nothing.
-	memory_t *init_memory = malloc(sizeof(memory_t));
+	memory_t *init_memory = malloc(sizeof(*init_memory));
 	init_memory->process = NULL;
 	init_memory->addr = 0;
 	init_memory->size = memsize;	

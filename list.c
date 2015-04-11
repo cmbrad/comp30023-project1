@@ -3,18 +3,28 @@
 #include <assert.h>
 
 #include "list.h"
+
+// Private function! Here instead of header.
 node_t *get_node_for(list_t *list, void *data);
 
-list_t *list_new(size_t data_size)
+/* Creates a new list of size zero and returns a pointer
+ * to it.
+ *
+ * Returns a pointer to list_t, a new list. */
+list_t *list_new()
 {
 	list_t *list = malloc(sizeof(*list));
 	list->head = list->foot = NULL;
-	list->data_size = data_size;
 	list->node_count = 0;
 
 	return list;
 }
 
+/* Destroys a list! The list is only responsible for it's own
+ * memory. If there are any complex structs inside data then
+ * they won't be freed...luckily I'm not using any of those :D 
+ *
+ * list: List we're destroying. */
 void list_destroy(list_t *list)
 {
 	node_t *cur = list->head;
@@ -30,6 +40,12 @@ void list_destroy(list_t *list)
 	free(list);
 }
 
+
+/* Adds an item onto the list at the end. Useful if
+ * FIFO behavior is required.
+ *
+ * list: List to append to
+ * data: Data to append to the list. Can be anything! */
 void list_push(list_t *list, void *data)
 {
 	node_t *node = malloc(sizeof(*node));
@@ -46,106 +62,78 @@ void list_push(list_t *list, void *data)
 	list->node_count++;
 }
 
-void list_push_o(list_t *list, void *data, cmp_func cmp)
-{
-	node_t *node = malloc(sizeof(*node));
-	node->data = data;
-	node->next = NULL;
-	int res;
-
-	node_t *pre = NULL;
-	node_t *cur = list->head;
-
-	printf("ASDSDA\n");
-	// If the list is empty then just insert at the top.
-	if (cur == NULL)
-	{
-		list_push(list, data);
-		return;
-	}
-
-	do {
-		assert(cur != NULL);
-		res = (*cmp)(cur->data, data);
-		if (res == -1)
-		{
-			printf("BEFORE\n");
-			if (pre != NULL)
-				pre->next = node;
-			else
-				list->head = node;
-			node->next = cur;
-
-			break;
-		}
-		else if (res == 0 || res == 1)
-		{
-			printf("AFTER\n");
-			node->next = cur->next;
-			cur->next = node;
-
-			if (node->next == NULL)
-				list->foot = node;
-			break;
-		}
-		pre = cur;
-	} while ((cur = cur->next));
-	list->node_count++;
-}
-
+/* Inserts into the given list using a specific ordering
+ * as specified in a given comparison function.
+ *
+ * list: List to insert into
+ * data: Item to insert into list
+ * cmp: Function to used to keep ordering in list */
 void list_insert(list_t *list, void *data, cmp_func cmp)
 {
 	node_t *new, *cur, *pre;
 
-	//printf("LIST_INSERT\n");
 	new = malloc(sizeof(*new));
 	assert(new != NULL);
 	new->data = data;
 	new->next = NULL;
 
+	// We've inserted an item! Acknowledge that.
 	list->node_count++;
 
-	if (list->head == NULL) {
+	
+	// If the list is empty then just insert at the top
+	if (list_is_empty(list)) {
 		list->head = list->foot = new;
-		//printf("head null\n");
-		//list_push(list, data);
 		return;
 	}
 
+	// If the list is not empty then search until the cmp function is -1,
+	// in other words search until the item we have is larger than the
+	// items already in the list.
 	pre = NULL;
 	cur = list->head;
 
 	while (cur != NULL && cmp(data, cur->data) == 1) {
-		//printf("cmp=%d\n",cmp(data,cur->data));
 		pre = cur;
 		cur = cur->next;
 	}
 
-	// Item is first in list
 	if (pre == NULL) {
-		//printf("start of list\n");
+		// Item is at start of list
 		list->head = new;
 		new->next = cur;
 	} else if(cur == NULL) {
-		//printf("end of list\n");
+		// Item is at end of list
 		pre->next = new;
 		list->foot = new;
 	} else {
-		//printf("middle.\n");
+		// Item is between two other items.
 		pre->next = new;
 		new->next = cur;
 	}
 }
 
+/* Remove the first item from the head of the list and return it.
+ * If the list is empty then return NULL.
+ *
+ * list: List to pop from */
 void *list_pop(list_t *list)
 {
 	void *res;
 
+	// Could cause a crash here, but let caller handle it.
 	if (list_is_empty(list))
 		return NULL;
 
+	// Return the current item and set head to be
+	// the next item
 	node_t *next = list->head->next;
 	res = list->head->data;
+	
+	// Free the node but don't free the data, we need the data!
+	// We just fetched it! No seriously. What sort of genius
+	// would even code that free in the first place...whoops
+	//free(list->head->data);
         free(list->head);
         list->head = next;
 	list->node_count--;
@@ -153,7 +141,11 @@ void *list_pop(list_t *list)
 	return res;
 }
 
-void list_for_each(list_t *list, void (*list_with)(void *))
+/* Executes a function using the data stored at each element in the
+ * list. Useful for print functions!
+ * list: List to interate over
+ * list_with: Function to iterate with. Executes for each data in list. */
+void list_for_each(list_t *list, iter_func list_with)
 {
 	node_t *cur = list->head;
 	assert(cur != NULL);
@@ -162,6 +154,15 @@ void list_for_each(list_t *list, void (*list_with)(void *))
 	} while((cur = cur->next));
 }
 
+/* Seek to modify items in the the list by comparing them to a specified
+ * item (data) using a specified function (modify). Can modify more than
+ * one item, if modification of any item succeeds we tell the caller. 
+ *
+ * list: List to modify
+ * data: Item to compare against
+ * modify: Function that modifies given list items
+ *
+ * Return 1 if any item is modified, else 0. */
 int list_modify(list_t *list, void *data, modify_func modify)
 {
 	int success = 0;
@@ -200,29 +201,39 @@ void *list_select(list_t *list, void *data, match_func match, select_func sel)
 	return res;
 }
 
+/* Similar to list_select however it starts iterating from any item that is
+ * a match to the given start item. Iteration will then cover all items in the
+ * list and wrap around again. All items will be covered, it's just the start
+ * point is modified.
+ *
+ * list: Item to select from
+ * start: Data value where iteration should start from
+ * data: Static data to compare against. (Optional)
+ * match: Function to use to compare to static data. (Optional)
+ * sel: Function to use when comparing against best selected item so far.
+ *
+ * Returns a pointer to the selected item. */
 void *list_select_from(list_t *list, void *start, void *data, match_func match, select_func sel)
 {
 	void *res = NULL;
 	node_t *cur = NULL;
 	int first_iter = 1;
 
-	// If a start point was specified 
-	if (start == NULL) {
-		//printf("No start given. Starting from head. (%d items)\n", list->node_count);
+	// If no start point was specified start from the beginning.
+	if (start == NULL)
 		cur = list->head;
-	} else
-	{
+	else {
+		// Start from given start point
 		cur = get_node_for(list,start);
-		assert(cur != NULL);
-		//printf("Starting from some node.. (%d items)\n", list->node_count);
-		//printf("list->foot->next=%p\n",list->foot->next);
+		// Want to cover the whole list even if don't start at start.
+		// Set foot->next to head to make a loop
 		list->foot->next = list->head;
 	}
 
 	assert(cur != NULL);
 
 	do {
-		//printf("loopin. start=%p, cur=%p\n", start, cur->data);
+		// If we reach the start point again then break
 		if (start != NULL && !first_iter && cur->data == start)
 			break;
 		first_iter = 0;
@@ -232,12 +243,20 @@ void *list_select_from(list_t *list, void *start, void *data, match_func match, 
 			res = sel(res, cur->data);
 	} while ((cur = cur->next));
 
-	//printf("END\n");
+	// Reset foot->next to NULL to break infinite loop we made to
+	// cover all items earlier.
 	list->foot->next = NULL;
 
 	return res;
 }
 
+/* Get the list node associated with a particular piece of data.
+ * INTERNAL USE ONLY.
+ * list: List to fetch node from
+ * data: Data point to be present in list
+ *
+ * Returns a pointer to the node where the data is present at.
+ * If not present then return NULL. */
 node_t *get_node_for(list_t *list, void *data)
 {
 	node_t *cur = list->head;
@@ -250,36 +269,52 @@ node_t *get_node_for(list_t *list, void *data)
 	return NULL;
 }
 
+/* Remove an item from the list that corresponds to the given data value
+ *
+ * list: List to remove from
+ * data: item to remove. */
 void list_remove(list_t *list, void *data)
 {
 	node_t *pre = NULL;
 	node_t *cur = list->head;
 
-	//printf("list_remove\n");
 	assert(cur != NULL);
 	do {
 		if (cur->data == data)
 		{
+			// Keep the count accurate.
 			list->node_count--;
+
+			// If item is not at head then update previous item,
+			// else update head of list.
 			if (pre != NULL)
 				pre->next = cur->next;
 			else
 				list->head = cur->next;
 
+			// If item is at the end of the list then update the foot
 			if (cur->next == NULL)
 			{
 				list->foot = pre;
+				// This should usually run. list->foot will
+				// only be NULL if list is empty.
 				if (list->foot != NULL)
 					list->foot->next = NULL;
 			}
 
-			//printf("head=%p, foot=%p\n",list->head, list->foot);
 			return;
 		}
 		pre = cur;
 	} while((cur = cur->next));	
 }
 
+/* Function to 'reduce' a list down to one value. Inspired by using
+ * reduce when learning ruby! Total is directly written into accum
+ * rather than returned.
+ *
+ * list: List to reduce
+ * accum: Variable to accumulate list items into
+ * reduce: Function to use while accumulating. */
 void list_reduce(list_t *list, void *accum, reduce_func reduce)
 {
 	node_t *cur = list->head;
@@ -289,6 +324,14 @@ void list_reduce(list_t *list, void *accum, reduce_func reduce)
 	} while ((cur = cur->next));
 }
 
+/* Get the item in the list that occurs after a given item.
+ * Note: Returns data and not node_t itself, gotta keep that
+ * encapsulation.
+ *
+ * list: List to iterate over
+ * data: Item we're searching for...to get the next item
+ *
+ * Returns a pointer to the next item, or NULL if there is no next. */
 void *list_get_next(list_t *list, void *data)
 {
 	node_t *cur = list->head;
@@ -300,12 +343,12 @@ void *list_get_next(list_t *list, void *data)
 	return NULL;
 }
 
+/* Check if a given list is empty (no nodes) or not.
+ *
+ * list: List to check
+ *
+ * Returns 1 if list is empty or 0 if it contains at least 1 item. */
 int list_is_empty(list_t *list)
 {
 	return list->node_count == 0;
-}
-
-unsigned int list_count(list_t *list)
-{
-	return list->node_count;
 }
