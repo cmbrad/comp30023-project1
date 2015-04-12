@@ -1,15 +1,93 @@
 # COMP30023 Assignment 1
+# Author: Chris Bradley (635 847)
+
+###########
+# Results #
+###########
+# Experiment 1: Many processes of the same size
+# Memory size: 20
+# Input file: exp1_same.in
++-----------+--------------------+----------------+--------------------------+
+| Algorithm | Average #Processes | Average #Holes | Average Memory Usage (%) |
++-----------+--------------------+----------------+--------------------------+
+| Best      | 13.60              | 0.19           | 90.73                    |
++-----------+--------------------+----------------+--------------------------+
+| First     | 13.60              | 0.19           | 90.73                    |
++-----------+--------------------+----------------+--------------------------+
+| Next      | 13.60              | 0.19           | 90.73                    |
++-----------+--------------------+----------------+--------------------------+
+| Worst     | 13.60              | 0.19           | 90.73                    |
++-----------+--------------------+----------------+--------------------------+
+
+# Experiment 2: Processes of increasing size
+# Memory size: 2560
+# Input file: exp2_increasing.in 
++-----------+--------------------+----------------+--------------------------+
+| Algorithm | Average #Processes | Average #Holes | Average Memory Usage (%) |
++-----------+--------------------+----------------+--------------------------+
+| Best      | 7.67               | 1.00           | 41.33                    |
++-----------+--------------------+----------------+--------------------------+
+| First     | 7.67               | 1.00           | 41.33                    |
++-----------+--------------------+----------------+--------------------------+
+| Next      | 7.67               | 1.00           | 41.33                    |
++-----------+--------------------+----------------+--------------------------+
+| Worst     | 7.67               | 1.00           | 41.33                    |
++-----------+--------------------+----------------+--------------------------+
+
+# Experiment 3: Small->Big->Small->Big process ordering
+# Memory size: 12
+# Input file: exp3_alternating.in
++-----------+--------------------+----------------+------------------------+
+| Algorithm | Average #Processes | Average #Holes | Final Memory Usage (%) |
++-----------+--------------------+----------------+------------------------+
+| Best      | 4.79               | 1.32           | 73.16                  |
++-----------+--------------------+----------------+------------------------+
+| First     | 5.20               | 0.87           | 79.67                  |
++-----------+--------------------+----------------+------------------------+
+| Next      | 4.79               | 1.32           | 73.16                  |
++-----------+--------------------+----------------+------------------------+
+| Worst     | 4.62               | 1.29           | 73.33                  |
++-----------+--------------------+----------------+------------------------+
+
+##############
+# Discussion #
+##############
+The first experiment was designed to show what happens when many processes of the same size are loaded.
+As the results show this results in all algorithms behaving in exactly the same way as they do not have multiple
+holes to choose between, they always have a single hole.
+
+The second experiment was designed to illustrate what happens when there are a few large processes and many
+smaller processes. Once again in this experiment all three algorithms behave exactly the same. This occurs
+as memory is loaded with the small processes, however before any holes are allowed to form they are kicked
+out of memory by a large process entering, effectively clearing memory and preventing fragmentation.
+
+
+The third experiment was designed to illustrate what many similar, but not the same, sized proceesses
+will do to memory fragmentation. This is the only scenario where allocation algorithms seem to affect
+performance.
+Here 'first' allocation performs the best with lowest memory holes and highest average memory usage.
+The other three algorithms perform similarly, despite the names of 'worst' and 'best' implying
+a potential large difference, they both performed similarly in the end.
+
+Overall across all three experiments, the differences between the four algorithms were minimal.
+
+###########
+# Answers #
+###########
 # Question 1
 This statement is largely accurate. In a typical workload a system will be loaded by many processes of similar sizes, meaning any holes
 left in memory will be of similar size. This means that the algorithm used for selecting which hole to insert a new process into
 becomes less important overtime as there are few differences.
+This statement is supported by the results of my experiments, in two of the three experiments all the algorithms performed exactly the same.
+In the third scenario three of the algorithms performed quite similarly with only first showing a (small) improvement. Over a longer period
+of time I'd expect the differences to decrease as a further equilibrium is reached.
 
 # Question 2
 We're talking about the average case so we'll talk about an average scenario, memory that has already been loaded and has reached 'equilibrium'.
 While memory is being initially loaded this will likely not hold true as we load processes in sequentially. Until swapping has occured this does
 not become very relevant.
 
-Assuming we have P processes in memory, the maximum number of holes in memory would be P + 1. This is entirely worst cast, disaster, end of the world
+Assuming we have P processes in memory, the maximum number of holes in memory would be P + 1. This is entirely worst case, disaster, end of the world
 type stuff though where memory has become so fragmented we should probably just give up and start again.
 
 On the average case lets assume that we're employing some sort of remotely intelligent swapping algorithm. When processes are swapped in they will be
@@ -18,8 +96,17 @@ Additionally let's assume that all processes are of a similar size with the maxi
 We don't want any massive processes coming and kicking all the small ones out of memory, that'd end up making one massive hole and skew our statistics while
 trying to reload smaller ones.
 
-So, let's talk about our average case. Many similarly sized processes having reached an equilibrium state where processes have been swapped in and out.
+So, let's talk about our average case; many similarly sized processes having reached an equilibrium state where processes have been swapped in and out.
 
+
+
+
+PPPP
+PFPP
+PPFPP
+PPPFP
+PFPFP
+PPFPFP
 
 
 		F	P
