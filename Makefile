@@ -1,3 +1,5 @@
+# Author: Chris Bradley (635847)
+
 CC = gcc
 CFLAGS = -Wall
 
@@ -15,8 +17,7 @@ clobber: clean
 	rm $(EXE)
 
 ## Dependencies
-memswap.o: memswap.c list.h process.h process_size_file.h memory.h
-list.o: list.c list.h
-process_size_file.o: process_size_file.c list.h process.h
-first_fit.o: process.h
-#process.o: process.h
+memswap.o: Makefile memswap.c list.h process.h process_size_file.h memory.h
+list.o: Makefile list.c list.h
+process_size_file.o: Makefile process_size_file.c list.h process.h
+first_fit.o: Makefile process.h

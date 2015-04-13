@@ -1,3 +1,6 @@
+/* Author: Chris Bradley (635 847)
+ * Contact: chris.bradley@cy.id.au */
+
 #ifndef INCLUDE_PROCESS_H
 #define INCLUDE_PROCESS_H
 typedef struct process {

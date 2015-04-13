@@ -1,3 +1,6 @@
+/* Author: Chris Bradley (635 847)
+ * Contact: chris.bradley@cy.id.au */
+
 #include <stdlib.h>
 
 #ifndef INCLUDE_LIST_H

@@ -1,3 +1,6 @@
+/* Author: Chris Bradley (635 847)
+ * Contact: chris.bradley@cy.id.au */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -12,9 +15,15 @@
 
 #define USAGE "./memswap -a [algorithm name] -f [filename] -m [memsize]"
 
+// Amount of times processes can be swapped out before they're fnished.
 #define SWAP_LIMIT 3
 
+// These functions don't need to be called from anywhere else, might as
+// well just define them here. Don't need a header fle.
 process_t *swap_process(list_t *memory, list_t *free_list);
+int get_arguments(int, char **, char **, char **, int *);
+
+// List helper functons
 void add_free(list_t *free_list, memory_t *rem);
 int process_cmp(void *cmp1, void *cmp2);
 void print_free(list_t *free_list);
@@ -23,13 +32,6 @@ void print_que(list_t *queue);
 int get_mem_usage(list_t *memory);
 int remove_free(list_t *list, void *a, void *b);
 int add_free_part(list_t *list, void *a, void *b);
-
-void print_free_data(void *data);
-void print_memory_data(void *data);
-void print_process_data(void *data);
-
-int get_arguments(int argc, char **argv, char **algorithm_name, char **filename, int *memsize);
-
 int get_addr(list_t *, process_t *, select_func);
 int match_addr(void *, void *);
 int match_size(void *, void *);
@@ -37,12 +39,14 @@ void *first_get_addr(void *, void *);
 void *best_get_addr(void *, void *);
 void *worst_get_addr(void *, void *);
 void *next_get_addr(void *, void *);
-
 void *select_process(void *, void *);
-
 void reduce_memory(void *a, void *b);
+void print_free_data(void *data);
+void print_memory_data(void *data);
+void print_process_data(void *data);
 
 // Lets not go adding arguments to all our functions...
+// Store value of last address memory was given here.
 int last_address;
 
 int main(int argc, char **argv)
@@ -59,7 +63,8 @@ int main(int argc, char **argv)
 	// Last address we've looked at is the start.
 	last_address = 0;
 
-	// Parse the process file to obtain the initial queue of processes waiting to be swapped into memory.
+	// Parse the process file to obtain the initial queue
+	// of processes waiting to be swapped into memory.
 	list_t *process_list = load_processes_from(filename);
 
 	// Assume memory is initially empty.
@@ -93,7 +98,8 @@ int main(int argc, char **argv)
 	}
 
 	int time = 0;
-	// Load the processes from the queue into memory, one by one, according to one of the four algorithms.
+	// Load the processes from the queue into memory,
+	// one by one, according to one of the four algorithms.
 	process_t *cur = NULL;
 	while ((cur = list_pop(process_list)) != NULL)
 	{
@@ -106,7 +112,8 @@ int main(int argc, char **argv)
 		
 		// Swap out processes until we have enough space to allocate to
 		// the current process
-		while ((new_mem->addr = get_addr(free_list, new_mem->process, alg_get_addr)) == -1)
+		while ((new_mem->addr =
+			get_addr(free_list, new_mem->process, alg_get_addr)) == -1)
 		{
 			// Swap out a process to make room to allocate memory
 			process_t *to_swap = swap_process(memory, free_list);
@@ -120,7 +127,11 @@ int main(int argc, char **argv)
 		list_modify(free_list, new_mem, remove_free);
 	
 		// Print information string...
-		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n", new_mem->process->pid,memory->node_count,free_list->node_count,(int)(ceil((100.0*get_mem_usage(memory))/memsize)));
+		printf("%d loaded, numprocesses=%d, numholes=%d, memusage=%d%%\n",
+			new_mem->process->pid,
+			memory->node_count,
+			free_list->node_count,
+			(int)(ceil((100.0*get_mem_usage(memory))/memsize)));
 
 		// Print debug information
 		#ifdef DEBUG
@@ -149,7 +160,8 @@ int main(int argc, char **argv)
  * memsize: Pointer to an integer to store size of virtual memory
  *
  * Returns 1 if fetching arguments succeeds, else returns 0. */
-int get_arguments(int argc, char **argv, char **algorithm_name, char **filename, int *memsize)
+int get_arguments(int argc, char **argv,
+									char **algorithm_name, char **filename, int *memsize)
 {
 	int c;
 
@@ -210,7 +222,8 @@ int get_addr(list_t *free_list, process_t *process, select_func sel_get_addr)
 		return -1;
 
 	last = list_select(free_list, &last_address, match_addr, first_get_addr);
-	chosen = list_select_from(free_list, last, &process->size, match_size, sel_get_addr);
+	chosen = list_select_from(free_list, last, &process->size,
+																	match_size, sel_get_addr);
 	
 	return chosen != NULL ? chosen->addr : -1;
 }
@@ -382,7 +395,10 @@ void *select_process(void *a, void *b)
 	memory_t *best = (memory_t *)a;
 	memory_t *curr = (memory_t *)b;
 
-	if (best == NULL || curr->size > best->size || (curr->size == best->size && curr->process->last_loaded < best->process->last_loaded))
+	if (best == NULL ||
+			curr->size > best->size ||
+			(curr->size == best->size &&
+				curr->process->last_loaded < best->process->last_loaded))
 		return curr;
 	return best;
 }
@@ -400,7 +416,8 @@ void *select_process(void *a, void *b)
 void add_free(list_t *free_list, memory_t *rem)
 {
 	// Try to combine newly freed memory with a current free block
-	if (list_is_empty(free_list) || !list_modify(free_list, rem, add_free_part))
+	if (list_is_empty(free_list) ||
+			!list_modify(free_list, rem, add_free_part))
 	{
 		// Free memory is not contiguous and cannot be combined,
 		// or there is no free memory. Create a new free block.
@@ -523,9 +540,11 @@ int add_free_part(list_t *list, void *a, void *b)
 		// Extend the current free block into the next
 		m1->size += m2->size;
 		
-		// As we've just extended a block forwards we may end up adjacent to another free
-		// block. If this occurs, extend into that too!
-		if ((next = list_get_next(list, m1)) != NULL && m1->addr + m1->size == next->addr)
+		// As we've just extended a block forwards we may end
+		// up adjacent to another free block. If this occurs,
+		// extend into that too!
+		if ((next = list_get_next(list, m1)) !=
+			NULL && m1->addr + m1->size == next->addr)
 		{
 			m1->size += next->size;
 			// We've consumed this memory! Now we destroy it.
@@ -574,7 +593,8 @@ void print_memory_data(void *data)
 /* Print the list of processes waiting to get in to memory. */
 void print_que(list_t *queue)
 {
-	printf("Process Queue (pid,size,last_loaded,swap_count) (%d): ", queue->node_count);
+	printf("Process Queue (pid,size,last_loaded,swap_count) (%d): ",
+		queue->node_count);
 	if (!list_is_empty(queue))
 		list_for_each(queue, print_process_data);
 	printf(".\n");

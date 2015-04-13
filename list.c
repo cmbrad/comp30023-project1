@@ -1,3 +1,6 @@
+/* Author: Chris Bradley (635 847)
+ * Contact: chris.bradley@cy.id.au */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
